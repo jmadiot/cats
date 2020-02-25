@@ -1,0 +1,6 @@
+SC
+
+include "fences.cat"
+include "cos.cat"
+
+acyclic po | (fr | rf | co) as sc
