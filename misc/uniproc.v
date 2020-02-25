@@ -1,38 +1,3 @@
-(* Require Import Relations Setoid Basics Morphisms. *)
-
-(* Instance incl_subrel {X} : *)
-(*   subrelation (inclusion X) *)
-(*               (pointwise_relation X (pointwise_relation X (impl))). *)
-(* Proof. compute; auto. Qed. *)
-
-(* Instance incl_subrel_flip {X} : *)
-(*   subrelation (flip (inclusion X)) *)
-(*               (pointwise_relation X (pointwise_relation X (flip impl))). *)
-(* Proof. compute; auto. Qed. *)
-
-(* Lemma test {X} (R S : relation X) (e : inclusion X R S) x y (xy : R x y) : S x y. *)
-(* Fail Fail rewrite <-e. *)
-(* rewrite e in xy. *)
-(* auto. *)
-(* Qed. *)
-
-(* Variable f : forall {X}, relation X -> relation X. *)
-(* Variable fmon : forall {X} (R S : relation X), inclusion X R S -> inclusion X (f R) (f S). *)
-
-(* Instance f_proper {X} : Proper (inclusion X ==> inclusion X) f. *)
-(* intro; apply fmon. *)
-(* Qed. *)
-
-(* Lemma f1 {X} (R S : relation X) (e : inclusion X R S) : inclusion X (f R) (f S). *)
-(* rewrite e. (* ??? *) (* c'est peut-être juste que l'inclusion est pas geree? *) *)
-
-(* Lemma test {X} (R S : relation X) (e : inclusion X R S) x y (xy : f R x y) : f S x y. *)
-(* Fail Fail rewrite <-e. *)
-(* rewrite e in xy. *)
-(* auto. *)
-(* Qed. *)
-
-
 From RelationAlgebra Require Import lattice prop monoid rel all.
 From Coq Require Import Relations String.
 
@@ -41,67 +6,6 @@ From Coq Require Import Relations String.
 Definition relation X := hrel X X.
 Definition irreflexive {X} (R : relation X) := R ⊓ 1 ≦ 0.
 Definition acyclic {X} (R : relation X) := irreflexive (R^+).
-
-
-(* Instance leq_app {A x y} : Proper (@leq (hrel_lattice_ops A A) ==> impl) (fun R => R x y). *)
-(* Proof. *)
-(*   compute; auto. *)
-(* Qed. *)
-
-(* Instance leq_subrelation {A} : Proper (@leq (hrel_lattice_ops A A) ==> subrelation) (fun R => R). *)
-(* Proof. *)
-(*   compute; auto. *)
-(* Qed. *)
-
-(* Instance leq_subrelation' {A} (R : relation A) x y : subrelation leq (fun x y => pwr (pwr R) x y). *)
-(* Proof. *)
-(*   compute; auto. *)
-(* Qed. *)
-
- (* "subrelation leq (pwr (pwr ?r))" *)
-
-(* Instance leq_app {A} : Proper (@leq (hrel_lattice_ops A A) ==> impl) (pwr (pwr R)). *)
-(* Proof. *)
-(*   compute; auto. *)
-(* Qed. *)
-
-(* Instance leq_subrel_flip {X} : subrelation (flip leq) (pointwise_relation X (pointwise_relation X (flip impl))). Proof. compute; auto. Qed. *)
-(* Instance leq_subrel      {X} : subrelation       leq  (pointwise_relation X (pointwise_relation X       impl )). Proof. compute; auto. Qed. *)
-
-(* Instance leq_subrel_flip {X} : subrelation (flip (@leq (hrel_lattice_ops X X))) (pointwise_relation X (pointwise_relation X (flip impl))). Proof. compute; auto. Qed. *)
-(* Instance leq_subrel      {X} : subrelation (      @leq (hrel_lattice_ops X X )) (pointwise_relation X (pointwise_relation X       impl )). Proof. compute; auto. Qed. *)
-
-
-(* Lemma test1 {X} (R S : relation X) (e : R ≦ S) x y (xy : R x y) : S x y. *)
-(* Fail Fail rewrite <-e. *)
-(* Fail Fail rewrite e in xy. *)
-(* rewrite <-e. auto. *)
-(* Qed. *)
-
-(*
-
-solution, a bit ugly:
-
-Lemma leq_ {X} {R S : relation X} {x y} : R ≦ S -> R x y -> S x y. compute; auto. Qed.
-Tactic Notation "rewrite'" "<-" constr(e) := eapply leq_; [ rewrite <-e; reflexivity | ].
-Tactic Notation "rewrite'"      constr(e) := eapply leq_; [ rewrite e; reflexivity | ].
-Tactic Notation "rewrite'"      constr(e) "in" hyp(H) := eapply leq_ in H; [ | rewrite e; reflexivity ].
-Tactic Notation "rewrite'" "<-" constr(e) "in" hyp(H) := eapply leq_ in H; [ | rewrite <-e; reflexivity ].
-
-Lemma test2 {X} (R S : relation X) (e : leq R S) x y (xy : R^+ x y) : S^+ x y.
-rewrite' e in xy.
-rewrite' <-e.
-eapply leq_ in xy; [ | rewrite e; reflexivity ].
-eapply leq_; [ rewrite <-e; reflexivity | ].
-exfalso.
-
-assert (A : R^+ ≦ S^+). rewrite e; auto. apply A.
-assert (A : R^+ ≦ S^+). rewrite e.
-rewrite <-e.
-rewrite e in xy.
-Fail rewrite (leq_app _ _ e) in xy.
-Abort.
-*)
 
 Lemma irreflexive_incl {X} (R S : relation X) : R ≦ S -> irreflexive S -> irreflexive R.
 Proof.
