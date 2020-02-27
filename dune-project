@@ -5,6 +5,8 @@
 (generate_opam_files true)
 (package
    (name Catincoq)
+   (depends ("coq" (>= 8.0)) ("dune" (>= 2.0)) ("coq-relation-algebra" (>= 1.7)))
+   (depopts ("herdtools7" (>= 7)))
    (synopsis "A Coq library to reason about Cat models.")
    (description "This library provides  a way to reason in Coq about weak memory models written in Cat."))
 
