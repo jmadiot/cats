@@ -3,7 +3,7 @@
 (* Translation of model Simple C11 *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel.
-Require Import Cat.
+From Catincoq Require Import Cat.
 Section Model.
 Open Scope cat_scope.
 Variable c : candidate.

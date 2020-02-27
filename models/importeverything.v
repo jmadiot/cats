@@ -1,4 +1,4 @@
-Require Import Cat Relations.
+From Catincoq Require Import Cat.
 Require LL aarch64_obsolete aarch64 aarch64fences arm_alt arm armfences armllh atom_arm atom c11_base c11_cos c11_los c11_orig c11_partialSC c11_simp compat cos coscat cross doc64 fences filters fulleieio herd herdcat lessrelaxed mini minimal minimalcat mips_tso mips mipsfences naked ppc_checks ppc ppcfences ppo pretty prettycat qualcomm rc11 riscv_defs riscv_total riscv sc sc2 sccat simple_arm simple_c11 stdlib tso uni uniproc_sca uniproc_normw_cat uniproc uniproccat x86fences x86tso.
 
 Check LL.valid.

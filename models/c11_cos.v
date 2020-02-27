@@ -3,7 +3,7 @@
 (* Translation of model Generate co's (mo's) for c11, ie on atomic writes only ?? *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel.
-Require Import Cat.
+From Catincoq Require Import Cat.
 Section Model.
 Open Scope cat_scope.
 Variable c : candidate.
