@@ -1,0 +1,5 @@
+(coq.theory
+   (name Catincoq_Models)
+   (package Catincoq_Models)
+   (flags "-R" "../lib" "Catincoq")
+   (modules aarch64fences aarch64_obsolete aarch64 arm_alt armfences armllh arm atom_arm atom c11_base c11_cos c11_los c11_orig c11_partialSC c11_simp compat coscat cos cross doc64 fences filters fulleieio herdcat herd importeverything lessrelaxed LL minimalcat minimal mini mipsfences mips_tso mips naked ppc_checks ppcfences ppc ppo prettycat pretty qualcomm rc11 riscv_defs riscv_total riscv sc2 sccat sc simple_arm simple_c11 stdlib tso uniproccat uniproc_normw_cat uniproc_sca uniproc uni x86fences x86tso))
