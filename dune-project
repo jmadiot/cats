@@ -1,5 +1,5 @@
 (lang dune 2.0)
-(authors "Jean-Marie Madiot Simon Castellan")
+(authors "Jean-Marie Madiot" "Simon Castellan")
 (using coq 0.1)
 (name catincoq)
 (generate_opam_files true)

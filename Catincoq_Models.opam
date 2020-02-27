@@ -2,7 +2,7 @@
 opam-version: "2.0"
 synopsis: "A collection of axiomatic weak memory models written in Coq."
 description: "A collection of axiomatic weak memory models written in Coq."
-authors: ["Jean-Marie Madiot Simon Castellan"]
+authors: ["Jean-Marie Madiot" "Simon Castellan"]
 depends: [
   "dune" {>= "2.0"}
 ]
