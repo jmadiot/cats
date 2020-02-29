@@ -51,9 +51,9 @@ Definition irreflexive {A} (R : relation A) := forall x, ~R x x.
 
 Notation refl_clos := (fun R => union R id) (only parsing).
 
-Notation trans_clos := (hrel_str _) (only parsing).
+Notation trans_clos := (hrel_itr _) (only parsing).
 
-Notation refl_trans_clos := (hrel_itr _) (only parsing).
+Notation refl_trans_clos := (hrel_str _) (only parsing).
 
 Definition acyclic {A} (R : relation A) := incl (intersection (trans_clos R) id) empty.
 
