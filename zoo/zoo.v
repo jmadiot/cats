@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles.
 From RelationAlgebra Require Import all.
-Require Import Cat.
+From Catincoq Require Import Cat.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.
@@ -154,7 +154,7 @@ Ltac destr :=
   | c : candidate |- _ =>
     destruct c as
       [events W R IW FW B RMW F po addr data ctrl rmw amo
-              rf loc ext int unknown_set unknown_relation]
+              rf loc ext int uset urel]
   end.
 
 Ltac destrunfold := destr; repeat autounfold with * in *.
@@ -203,7 +203,7 @@ Admitted.
 Lemma acyclic_compose {X} (R S : relation X) : acyclic (R⋅S) -> acyclic (S⋅R).
 Proof.
   rewrite 2acyclic_irreflexive.
-  assert (E : (R⋅S)^+ ≡ R⋅(S⋅R)^*⋅S) by kat. rewrite E.
+  assert (E : (R⋅S)^+ ≡ R⋅(S⋅R)^*⋅S) by ka. rewrite E.
   rewrite irreflexive_compose.
   apply irreflexive_weq.
   kat.
@@ -312,10 +312,92 @@ Proof.
   auto.
 Qed.
 
-Lemma acyclic_range_domain {X} (R S : relation X) (Rtrans : R ⋅ R ≦ R) :
-  acyclic (range(S) ⋅ R ⋅ domain(S) ⊔ S) -> acyclic (R ⊔ S).
+Lemma acyclic_bound_right {X} (R : relation X) : acyclic (R ⋅ domain R) -> acyclic R.
+Proof.
+  intros A. apply acyclic_compose in A. rewrite domain_spec in A.
+  auto.
+Qed.
+
+Lemma cycle_break {X} (R S : relation X) :
+  is_transitive R ->
+  is_transitive S ->
+  (acyclic (R ⊔ S) <->
+   irreflexive R /\
+   irreflexive S /\
+   acyclic (R ⋅ S)).
+Admitted.
+
+Definition is_irreflexive {X} (R : relation X) := R ⊓ 1 ≦ 0.
+
+Lemma is_irreflexive_spec {X} (R : relation X) : irreflexive R <-> is_irreflexive R.
 Proof.
 Admitted.
+
+Definition is_acyclic {X} (R : relation X) := R^+ ⊓ 1 ≦ 0.
+
+Lemma is_acyclic_spec {X} (R : relation X) : acyclic R <-> is_acyclic R.
+Proof.
+  split; intros A x y; specialize (A x y); rewrite A; compute; tauto.
+Qed.
+
+Lemma irreflexive_acyclic {X} (R : relation X) : acyclic R <-> irreflexive (R^+).
+Proof.
+  rewrite is_acyclic_spec, is_irreflexive_spec.
+  compute; auto.
+Qed.
+
+Lemma acyclic_itr {X} (R : relation X) : acyclic (R^+) <-> acyclic R.
+Proof.
+  rewrite 2is_acyclic_spec. unfold is_acyclic.
+  cut (R^+^+ ≡ R^+). now intros ->. ra.
+Qed.
+
+Lemma acyclic_cup_itr_l {X} (R S : relation X) : acyclic (R^+ ⊔ S) <-> acyclic (R ⊔ S).
+Proof.
+  rewrite 2is_acyclic_spec. unfold is_acyclic.
+  cut ((R ⊔ S)^+ ≡ (R^+ ⊔ S)^+). now intros ->. ra.
+Qed.
+
+Lemma acyclic_cup_itr_r {X} (R S : relation X) : acyclic (R ⊔ S^+) <-> acyclic (R ⊔ S).
+Proof.
+  rewrite 2is_acyclic_spec. unfold is_acyclic.
+  cut ((R ⊔ S)^+ ≡ (R ⊔ S^+)^+). now intros ->. ra.
+Qed.
+
+Lemma acyclic_cup {X} (R S : relation X) :
+  acyclic (R ⊔ S) <-> acyclic R /\ acyclic S /\ acyclic (R^+ ⋅ S^+).
+Proof.
+  rewrite <-acyclic_cup_itr_l, <-acyclic_cup_itr_r.
+  split.
+  - intros A. rewrite <-acyclic_itr in A.
+    split; [ | split ]; revert A; apply acyclic_leq; ka.
+  - intros (r & s & rs).
+    apply cycle_break.
+    + unfold is_transitive; ka.
+    + unfold is_transitive; ka.
+    + split; [ | split]; auto.
+      * revert r; rewrite is_irreflexive_spec, is_acyclic_spec; auto.
+      * revert s; rewrite is_irreflexive_spec, is_acyclic_spec; auto.
+Qed.
+
+Lemma acyclic_range_domain {X} (R S : relation X) :
+  acyclic (R ⊔ S) <-> acyclic R /\ acyclic (range S ⋅ R^+ ⋅ domain S ⊔ S).
+Proof.
+  rewrite acyclic_cup.
+  split.
+  - intros (r & s & rs). split; auto.
+    apply acyclic_cup. split; auto.
+    + rewrite range_1, domain_1. revert r. rewrite <-acyclic_itr. apply acyclic_leq. kat.
+    + split; auto. rewrite range_1, domain_1. revert rs. apply acyclic_leq. kat.
+  - intros (r & rs). split; auto. split. revert rs. apply acyclic_leq. kat.
+    assert (E : R^+⋅S^+ ≡ R^+⋅S^*⋅S). kat. rewrite E.
+    apply acyclic_bound_left. rewrite range_dot.
+    2: { revert rs. rewrite acyclic_irreflexive. apply irreflexive_leq. kat. }
+    apply acyclic_compose.
+    assert (E' : R^+⋅S^*⋅S ≡ R^+⋅S⋅S^*). kat. rewrite E'.
+    rewrite <-(domain_spec S) at 1. apply acyclic_compose.
+    revert rs. rewrite 2acyclic_irreflexive. apply irreflexive_leq. kat.
+Qed.
 
 Lemma tso_nosm_stronger_than_x86tso c :
   [W c] ⋅ [R c] ≦ 0 ->
@@ -337,7 +419,7 @@ Proof.
     auto.
   - (* main *)
     destrunfold.
-    set (MF := unknown_set _). fold MF in Hghb.
+    set (MF := uset _). fold MF in Hghb.
     rewrite !cap_cartes.
 
     (* all of the complexity below is due to the fact that po[mf]po is surrounded by [R+W] in tso_nosm
@@ -355,7 +437,14 @@ Proof.
     cut (acyclic (po⋅[MF]⋅po + (co + rf ∩ ext + rf°⋅co ∩ !id + [W]⋅po⋅[W] + [R]⋅po⋅[R ⊔ W]))).
     { apply acyclic_weq. ra. }
     apply acyclic_range_domain.
-    { transitivity (po⋅[MF]⋅(po⋅po⋅po)). kat. unfold is_transitive in po_trans. rewrite 2po_trans. auto. }
+    split.
+    { rewrite leq_tst_1.
+      apply acyclic_leq with po; ra_normalise; auto. apply acyclic_irreflexive.
+      cut (po^+ ≡ po). intros ->; auto. apply itr_transitive; auto. }
+    assert (Hpo : (po⋅[MF]⋅po)^+ ≦ po⋅[MF]⋅po).
+    { transitivity (po^+⋅[MF]⋅po^+). kat. rewrite itr_transitive; auto. }
+    rewrite Hpo.
+
     revert Hghb; apply acyclic_leq.
     autorewrite with range_domain.
     assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]) by admit (* property of co *).
@@ -380,7 +469,6 @@ Proof.
     + rewrite co_ww. destruct_rel. split; auto.
     + rewrite rf_wr. destruct_rel. split; auto.
 Admitted (* properties on cross *).
-
 
 Require rc11.
 
@@ -417,11 +505,11 @@ Proof.
     repeat rewrite diag_inter.
     repeat rewrite diag_union.
     Open Scope string_scope.
-    set (RLX := unknown_set "RLX").
-    set (ACQ := unknown_set "ACQ").
-    set (REL := unknown_set "REL").
-    set (SC := unknown_set "SC").
-    set (AR := unknown_set "ACQ_REL").
+    set (RLX := uset "RLX").
+    set (ACQ := uset "ACQ").
+    set (REL := uset "REL").
+    set (SC := uset "SC").
+    set (AR := uset "ACQ_REL").
     Fail fail ra_normalise. (* bad idea: 8000 lines or so *)
     set (ALL := ([ RLX ] ⊔ ([ REL ] ⊔ ([ AR ] ⊔ ([ ACQ ] ⊔ [ SC ]))))).
     admit.
