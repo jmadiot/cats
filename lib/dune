@@ -1,4 +1,4 @@
 (coq.theory
    (name Catincoq)
    (package Catincoq)
-   (modules Cat))
+   (modules Cat acyclic proprel))
