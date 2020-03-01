@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model Experimental model, with atomics *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition A := unknown_set "A".
 Definition X := unknown_set "X".
 Definition rmw := unknown_relation "rmw".
@@ -39,10 +38,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -65,16 +64,16 @@ Definition dd := addr ⊔ data.
 Definition rdw := po_loc ⊓ fre ⋅ rfe.
 Definition detour := po_loc ⊓ coe ⋅ rfe.
 Definition addrpo := addr ⋅ po.
-Definition aa := po ⊓ cartesian A A.
+Definition aa := po ⊓ [A] ⋅ top ⋅ [A].
 Definition sync : relation events := (*failed: try fencerel SYNC with 0*) 0.
 Definition lwsync : relation events := (*failed: try fencerel LWSYNC with 0*) 0.
 Definition eieio : relation events := (*failed: try fencerel EIEIO with 0*) 0.
 Definition isync : relation events := (*failed: try fencerel ISYNC with 0*) 0.
 Definition ctrlisync : relation events := (*failed: try ctrlcfence ISYNC with 0*) 0.
-Definition WW := cartesian W W.
-Definition RM := cartesian R M.
-Definition RR := cartesian R R.
-Definition WR := cartesian W R.
+Definition WW := [W] ⋅ top ⋅ [W].
+Definition RM := [R] ⋅ top ⋅ [M].
+Definition RR := [R] ⋅ top ⋅ [R].
+Definition WR := [W] ⋅ top ⋅ [R].
 Definition ci0 := ctrlisync ⊔ (detour ⊔ (aa ⊓ RR ⊔ aa ⊓ WR)).
 Definition ii0 := dd ⊔ (rfi ⊔ rdw).
 Definition cc0 := dd ⊔ (po_loc ⊔ (ctrl ⊔ (addrpo ⊔ aa))).
@@ -145,7 +144,7 @@ Variable Hic' : incl (ic0 ⊔ (ii' ⊔ (cc' ⊔ (ic' ⋅ cc' ⊔ ii' ⋅ ic'))))
          apply ic_ind'; exact r2.
   Qed.
 End scheme.
-Definition ppo := let ppoR := ii ⊓ cartesian R R in let ppoW := ic ⊓ cartesian R W in ppoR ⊔ ppoW.
+Definition ppo := let ppoR := ii ⊓ [R] ⋅ top ⋅ [R] in let ppoW := ic ⊓ [R] ⋅ top ⋅ [W] in ppoR ⊔ ppoW.
 Definition lwsync_0 := lwsync ⊓ RM ⊔ lwsync ⊓ WW.
 Definition eieio_0 := eieio ⊓ WW.
 Definition strong := sync.
@@ -156,10 +155,10 @@ Definition thinair := acyclic hb.
 Definition hbstar := hb^*.
 Definition propbase := (fence ⊔ rfe ⋅ fence) ⋅ hbstar.
 Definition chapo := rfe ⊔ (fre ⊔ (coe ⊔ (fre ⋅ rfe ⊔ coe ⋅ rfe))).
-Definition prop := propbase ⊓ cartesian W W ⊔ (chapo ⊔ 1) ⋅ (propbase^* ⋅ (strong ⋅ hbstar)).
+Definition prop := propbase ⊓ [W] ⋅ top ⋅ [W] ⊔ (chapo ⊔ 1) ⋅ (propbase^* ⋅ (strong ⋅ hbstar)).
 Definition propagation := acyclic (co ⊔ prop).
 Definition observation := irreflexive (fre ⋅ (prop ⋅ hbstar)).
-Definition xx := po ⊓ cartesian X X.
+Definition xx := po ⊓ [X] ⋅ top ⋅ [X].
 Definition scXX := acyclic (co ⊔ xx).
 Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := test /\ (atomic /\ (thinair /\ (propagation /\ (observation /\ scXX)))).

@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model C++11 *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition A := unknown_set "A".
 Definition ACQ := unknown_set "ACQ".
 Definition ACQ_REL := unknown_set "ACQ_REL".
@@ -47,10 +46,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -70,12 +69,12 @@ Definition coi_0 := coi.
 Definition fr := rf° ⋅ mo ⊓ !id.
 Definition fri := fr ⊓ int.
 Definition fre := fr ⊓ ext.
-Definition crit := let Mutex := LS ⊔ UL in let poMutex := po_loc ⊓ cartesian Mutex Mutex in po_loc ⊓ cartesian LS UL ⊓ !(poMutex ⋅ poMutex).
+Definition crit := let Mutex := LS ⊔ UL in let poMutex := po_loc ⊓ [Mutex] ⋅ top ⋅ [Mutex] in po_loc ⊓ [LS] ⋅ top ⋅ [UL] ⊓ !(poMutex ⋅ poMutex).
 Variable loLL : relation events.
 Definition loLU := (loLL ⊔ 1) ⋅ crit.
 Definition loUL := crit° ⋅ loLL.
 Definition lo := (loLL ⊔ (loLU ⊔ loUL))^+.
-Definition asw := cartesian I (M ⊓ !I).
+Definition asw := [I] ⋅ top ⋅ [(M ⊓ !I)].
 Definition sb := po.
 Definition mo_0 := co.
 Definition cacq := ACQ ⊔ (SC ⊓ (R ⊔ F) ⊔ (ACQ_REL ⊔ F ⊓ CON)).
@@ -83,9 +82,9 @@ Definition crel := REL ⊔ (SC ⊓ (W ⊔ F) ⊔ ACQ_REL).
 Definition ccon := R ⊓ CON.
 Definition fr_0 := rf° ⋅ mo_0.
 Definition dd := (data ⊔ addr)^+.
-Definition fsb := sb ⊓ cartesian F top.
-Definition sbf := sb ⊓ cartesian top F.
-Definition rs_prime := int ⊔ cartesian top (R ⊓ W).
+Definition fsb := sb ⊓ [F] ⋅ top ⋅ [top].
+Definition sbf := sb ⊓ [top] ⋅ top ⋅ [F].
+Definition rs_prime := int ⊔ [top] ⋅ top ⋅ [(R ⊓ W)].
 Definition rs := mo_0 ⊓ rs_prime ⊓ !((mo_0 ⊓ !rs_prime) ⋅ mo_0).
 Definition swra := ext ⊓ toid crel ⋅ ((fsb ⊔ 1) ⋅ (toid (A ⊓ W) ⋅ ((rs ⊔ 1) ⋅ (rf ⋅ (toid (R ⊓ A) ⋅ ((sbf ⊔ 1) ⋅ toid cacq)))))).
 Definition swul := ext ⊓ toid UL ⋅ (lo ⋅ toid LK).
@@ -99,21 +98,21 @@ Definition hb := sb ⊔ ithb.
 Definition Hb := acyclic hb.
 Definition hbl := hb ⊓ loc.
 Definition Coh := irreflexive ((rf° ⊔ 1) ⋅ (mo_0 ⋅ ((rf ⊔ 1) ⋅ hb))).
-Definition vis := hbl ⊓ cartesian W R ⊓ !(hbl ⋅ (toid W ⋅ hbl)).
+Definition vis := hbl ⊓ [W] ⋅ top ⋅ [R] ⊓ !(hbl ⋅ (toid W ⋅ hbl)).
 Definition Rf := irreflexive (rf ⋅ hb).
-Definition NaRf := is_empty (rf ⋅ diagonal (R ⊓ !A) ⊓ !vis).
-Definition NaRf_0 := is_empty (diagonal (FW ⊓ !A) ⋅ (hbl ⋅ diagonal W)).
+Definition NaRf := is_empty (rf ⋅ [(R ⊓ !A)] ⊓ !vis).
+Definition NaRf_0 := is_empty ([(FW ⊓ !A)] ⋅ (hbl ⋅ [W])).
 Definition Rmw := irreflexive (rf ⊔ (mo_0 ⋅ (mo_0 ⋅ rf°) ⊔ mo_0 ⋅ rf)).
 Definition Lo1 := irreflexive (lo ⋅ hb).
 Definition Lo2 := irreflexive (toid LS ⋅ (lo° ⋅ (toid LS ⋅ !(lo ⋅ (toid UL ⋅ lo))))).
 Definition Mutex := UL ⊔ LS.
-Definition cnf := (cartesian W top ⊔ cartesian top W) ⊓ loc ⊓ !(cartesian Mutex top ⊔ cartesian top Mutex).
-Definition dr := ext ⊓ (cnf ⊓ !hb ⊓ !hb° ⊓ !cartesian A A).
-Definition ur := int ⊓ ((cartesian W M ⊔ cartesian M W) ⊓ (loc ⊓ (!id ⊓ (!sb^+ ⊓ !(sb^+)°)))).
+Definition cnf := ([W] ⋅ top ⋅ [top] ⊔ [top] ⋅ top ⋅ [W]) ⊓ loc ⊓ !([Mutex] ⋅ top ⋅ [top] ⊔ [top] ⋅ top ⋅ [Mutex]).
+Definition dr := ext ⊓ (cnf ⊓ !hb ⊓ !hb° ⊓ !([A] ⋅ top ⋅ [A])).
+Definition ur := int ⊓ (([W] ⋅ top ⋅ [M] ⊔ [M] ⋅ top ⋅ [W]) ⊓ (loc ⊓ (!id ⊓ (!sb^+ ⊓ !(sb^+)°)))).
 Definition bl := toid LS ⋅ ((sb ⊓ lo) ⋅ toid LK) ⊓ !(lo ⋅ (toid UL ⋅ lo)).
 Definition losbwoul := sb ⊓ (lo ⊓ !(lo ⋅ (toid UL ⋅ lo))).
 Definition lu := toid UL ⊓ !(toid UL ⋅ (losbwoul° ⋅ (toid LS ⋅ (losbwoul ⋅ toid UL)))).
-Definition scp := cartesian SC SC ⊓ (fsb ⊔ 1) ⋅ ((mo_0 ⊔ (fr_0 ⊔ hb)) ⋅ (sbf ⊔ 1)) ⊓ !id.
+Definition scp := [SC] ⋅ top ⋅ [SC] ⊓ (fsb ⊔ 1) ⋅ ((mo_0 ⊔ (fr_0 ⊔ hb)) ⋅ (sbf ⊔ 1)) ⊓ !id.
 Definition Ssimp := acyclic scp.
 Definition Dr := is_empty dr.
 Definition unsequencedRace := is_empty ur.

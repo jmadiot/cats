@@ -3,11 +3,11 @@ cat_vs=LL.v aarch64_obsolete.v aarch64.v aarch64fences.v arm_alt.v arm.v armfenc
 
 cat_vos=$(cat_vs:=o)
 
-all_vos=$(cat_vos) Cat.vo importeverything.vo
+all_vos=$(cat_vos) importeverything.vo #Cat.vo
 
 all: $(all_vos)
 importeverything.vo: $(cat_vos)
-$(cat_vos): Cat.vo
+#$(cat_vos): Cat.vo
 
 %.vo: %.v
 	coqc $<

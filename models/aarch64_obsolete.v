@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model AArch64 *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition X := unknown_set "X".
 Definition rmw := unknown_relation "rmw".
 Definition tag2events := unknown_relation "tag2events".
@@ -38,10 +37,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -172,18 +171,18 @@ Variable Hic' : incl (ic0 ⊔ (ii' ⊔ (cc' ⊔ (ic' ⋅ cc' ⊔ ii' ⋅ ic'))))
          apply ic_ind'; exact r2.
   Qed.
 End scheme.
-Definition ppo := let ppoR := ii ⊓ cartesian R R in let ppoW := ic ⊓ cartesian R W in ppoR ⊔ ppoW.
-Definition acq := cartesian A M ⊓ po.
-Definition rel := cartesian M L ⊓ po.
-Definition syf := dmb_sy ⊓ cartesian M M ⊔ dsb_sy ⊓ cartesian M M.
-Definition stf := dmb_st ⊓ cartesian W W ⊔ dsb_st ⊓ cartesian W W.
-Definition ldf := dmb_ld ⊓ cartesian R M ⊔ dsb_ld ⊓ cartesian R M.
+Definition ppo := let ppoR := ii ⊓ [R] ⋅ top ⋅ [R] in let ppoW := ic ⊓ [R] ⋅ top ⋅ [W] in ppoR ⊔ ppoW.
+Definition acq := [A] ⋅ top ⋅ [M] ⊓ po.
+Definition rel := [M] ⋅ top ⋅ [L] ⊓ po.
+Definition syf := dmb_sy ⊓ [M] ⋅ top ⋅ [M] ⊔ dsb_sy ⊓ [M] ⋅ top ⋅ [M].
+Definition stf := dmb_st ⊓ [W] ⋅ top ⋅ [W] ⊔ dsb_st ⊓ [W] ⋅ top ⋅ [W].
+Definition ldf := dmb_ld ⊓ [R] ⋅ top ⋅ [M] ⊔ dsb_ld ⊓ [R] ⋅ top ⋅ [M].
 Definition fence := syf ⊔ (stf ⊔ (ldf ⊔ (acq ⊔ rel))).
-Definition hb := cartesian R M ⊓ fence ⊔ (rfe ⊔ ppo).
+Definition hb := [R] ⋅ top ⋅ [M] ⊓ fence ⊔ (rfe ⊔ ppo).
 Definition thin_air := acyclic hb.
 Definition prop := com^* ⋅ syf ⊔ (stf ⊔ (rfe ⊔ 1) ⋅ rel).
-Definition prop_al := cartesian L A ⊓ (rf ⊔ po) ⊔ cartesian A L ⊓ fr.
-Definition xx := cartesian W W ⊓ (cartesian X X ⊓ po).
+Definition prop_al := [L] ⋅ top ⋅ [A] ⊓ (rf ⊔ po) ⊔ [A] ⋅ top ⋅ [L] ⊓ fr.
+Definition xx := [W] ⋅ top ⋅ [W] ⊓ ([X] ⋅ top ⋅ [X] ⊓ po).
 Definition observation := irreflexive (prop ⋅ (rfe ⋅ ((fence ⊔ ppo) ⋅ fre))).
 Definition propagation := acyclic (co ⊔ (prop ⋅ hb^* ⊔ (xx ⊔ prop_al ⋅ hb^*))).
 Definition witness_conditions := generate_cos cobase co.

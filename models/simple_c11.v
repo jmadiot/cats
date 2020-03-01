@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model Simple C11 *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition A := unknown_set "A".
 Definition ACQ := unknown_set "ACQ".
 Definition ACQ_REL := unknown_set "ACQ_REL".
@@ -42,10 +41,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -59,26 +58,26 @@ Definition rmw_id := toid RMW.
 Definition crel_id := toid CREL.
 Definition cacq_id := toid CACQ.
 Definition sc_id := toid SC.
-Definition asw := cartesian I (M ⊓ !I).
+Definition asw := [I] ⋅ top ⋅ [(M ⊓ !I)].
 Definition A_0 := ((*failed: try X with emptyset_0*) emptyset_0) ⊔ ((*successful: try A with emptyset_0*) A).
 Definition P := M ⊓ !A_0.
-Definition WW r := r ⊓ cartesian W W.
-Definition WR r := r ⊓ cartesian W R.
-Definition RW r := r ⊓ cartesian R W.
-Definition RR r := r ⊓ cartesian R R.
-Definition RM r := r ⊓ cartesian R M.
-Definition MR r := r ⊓ cartesian M R.
-Definition WM r := r ⊓ cartesian W M.
-Definition MW r := r ⊓ cartesian M W.
-Definition MM r := r ⊓ cartesian M M.
-Definition AA r := r ⊓ cartesian A_0 A_0.
-Definition AP r := r ⊓ cartesian A_0 P.
-Definition PA r := r ⊓ cartesian P A_0.
-Definition PP r := r ⊓ cartesian P P.
-Definition AM r := r ⊓ cartesian A_0 M.
-Definition MA r := r ⊓ cartesian M A_0.
+Definition WW r := r ⊓ [W] ⋅ top ⋅ [W].
+Definition WR r := r ⊓ [W] ⋅ top ⋅ [R].
+Definition RW r := r ⊓ [R] ⋅ top ⋅ [W].
+Definition RR r := r ⊓ [R] ⋅ top ⋅ [R].
+Definition RM r := r ⊓ [R] ⋅ top ⋅ [M].
+Definition MR r := r ⊓ [M] ⋅ top ⋅ [R].
+Definition WM r := r ⊓ [W] ⋅ top ⋅ [M].
+Definition MW r := r ⊓ [M] ⋅ top ⋅ [W].
+Definition MM r := r ⊓ [M] ⋅ top ⋅ [M].
+Definition AA r := r ⊓ [A_0] ⋅ top ⋅ [A_0].
+Definition AP r := r ⊓ [A_0] ⋅ top ⋅ [P].
+Definition PA r := r ⊓ [P] ⋅ top ⋅ [A_0].
+Definition PP r := r ⊓ [P] ⋅ top ⋅ [P].
+Definition AM r := r ⊓ [A_0] ⋅ top ⋅ [M].
+Definition MA r := r ⊓ [M] ⋅ top ⋅ [A_0].
 Definition noid r : relation events := r ⊓ !id.
-Definition atom := diagonal A_0.
+Definition atom := [A_0].
 (* Definition of co_locs already included in the prelude *)
 (* Definition of cross already included in the prelude *)
 Definition generate_orders s pco := cross (co_locs pco (partition s)).

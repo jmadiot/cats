@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model Risc V partial order model *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition Acq := unknown_set "Acq".
 Definition AcqRel := unknown_set "AcqRel".
 Definition Fence_r_r := unknown_set "Fence.r.r".
@@ -52,49 +51,49 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
 (* Definition of map already included in the prelude *)
 Definition LKW := (*failed: try LKW with emptyset_0*) emptyset_0.
-Definition fence_r_r := diagonal R ⋅ (fencerel Fence_r_r ⋅ diagonal R).
-Definition fence_r_w := diagonal R ⋅ (fencerel Fence_r_w ⋅ diagonal W).
-Definition fence_r_rw := diagonal R ⋅ (fencerel Fence_r_rw ⋅ diagonal M).
-Definition fence_w_r := diagonal W ⋅ (fencerel Fence_w_r ⋅ diagonal R).
-Definition fence_w_w := diagonal W ⋅ (fencerel Fence_w_w ⋅ diagonal W).
-Definition fence_w_rw := diagonal W ⋅ (fencerel Fence_w_rw ⋅ diagonal M).
-Definition fence_rw_r := diagonal M ⋅ (fencerel Fence_rw_r ⋅ diagonal R).
-Definition fence_rw_w := diagonal M ⋅ (fencerel Fence_rw_w ⋅ diagonal W).
-Definition fence_rw_rw := diagonal M ⋅ (fencerel Fence_rw_rw ⋅ diagonal M).
-Definition fence_tso := let f := fencerel Fence_tso in diagonal W ⋅ (f ⋅ diagonal W) ⊔ diagonal R ⋅ (f ⋅ diagonal M).
+Definition fence_r_r := [R] ⋅ (fencerel Fence_r_r ⋅ [R]).
+Definition fence_r_w := [R] ⋅ (fencerel Fence_r_w ⋅ [W]).
+Definition fence_r_rw := [R] ⋅ (fencerel Fence_r_rw ⋅ [M]).
+Definition fence_w_r := [W] ⋅ (fencerel Fence_w_r ⋅ [R]).
+Definition fence_w_w := [W] ⋅ (fencerel Fence_w_w ⋅ [W]).
+Definition fence_w_rw := [W] ⋅ (fencerel Fence_w_rw ⋅ [M]).
+Definition fence_rw_r := [M] ⋅ (fencerel Fence_rw_r ⋅ [R]).
+Definition fence_rw_w := [M] ⋅ (fencerel Fence_rw_w ⋅ [W]).
+Definition fence_rw_rw := [M] ⋅ (fencerel Fence_rw_rw ⋅ [M]).
+Definition fence_tso := let f := fencerel Fence_tso in [W] ⋅ (f ⋅ [W]) ⊔ [R] ⋅ (f ⋅ [M]).
 Definition fence := fence_r_r ⊔ (fence_r_w ⊔ (fence_r_rw ⊔ (fence_w_r ⊔ (fence_w_w ⊔ (fence_w_rw ⊔ (fence_rw_r ⊔ (fence_rw_w ⊔ (fence_rw_rw ⊔ fence_tso)))))))).
-Definition po_loc_no_w := po_loc ⊓ !((po_loc ⊔ 1) ⋅ (diagonal W ⋅ po_loc)).
+Definition po_loc_no_w := po_loc ⊓ !((po_loc ⊔ 1) ⋅ ([W] ⋅ po_loc)).
 Definition rsw := rf° ⋅ rf.
 Definition AcqRel_0 := AcqRel ⊔ Sc.
 Definition AQ := Acq ⊔ AcqRel_0.
 Definition RL := Rel ⊔ AcqRel_0.
 Definition AMO := (*failed: try AMO with R ⊓ W*) R ⊓ W.
 Definition RCsc := (Acq ⊔ (Rel ⊔ AcqRel_0)) ⊓ (AMO ⊔ X).
-Definition r1 := diagonal M ⋅ (po_loc ⋅ diagonal W).
-Definition r2 := diagonal R ⋅ (po_loc_no_w ⋅ diagonal R) ⊓ !rsw.
-Definition r3 := diagonal (AMO ⊔ X) ⋅ (rfi ⋅ diagonal R).
+Definition r1 := [M] ⋅ (po_loc ⋅ [W]).
+Definition r2 := [R] ⋅ (po_loc_no_w ⋅ [R]) ⊓ !rsw.
+Definition r3 := [(AMO ⊔ X)] ⋅ (rfi ⋅ [R]).
 Definition r4 := fence.
-Definition r5 := diagonal AQ ⋅ (po ⋅ diagonal M).
-Definition r6 := diagonal M ⋅ (po ⋅ diagonal RL).
-Definition r7 := diagonal RCsc ⋅ (po ⋅ diagonal RCsc).
+Definition r5 := [AQ] ⋅ (po ⋅ [M]).
+Definition r6 := [M] ⋅ (po ⋅ [RL]).
+Definition r7 := [RCsc] ⋅ (po ⋅ [RCsc]).
 Definition r8 := rmw.
-Definition r9 := diagonal M ⋅ (addr ⋅ diagonal M).
-Definition r10 := diagonal M ⋅ (data ⋅ diagonal W).
-Definition r11 := diagonal M ⋅ (ctrl ⋅ diagonal W).
-Definition r12 := diagonal M ⋅ ((addr ⊔ data) ⋅ (diagonal W ⋅ (rfi ⋅ diagonal R))).
-Definition r13 := diagonal M ⋅ (addr ⋅ (diagonal M ⋅ (po ⋅ diagonal W))).
+Definition r9 := [M] ⋅ (addr ⋅ [M]).
+Definition r10 := [M] ⋅ (data ⋅ [W]).
+Definition r11 := [M] ⋅ (ctrl ⋅ [W]).
+Definition r12 := [M] ⋅ ((addr ⊔ data) ⋅ ([W] ⋅ (rfi ⋅ [R]))).
+Definition r13 := [M] ⋅ (addr ⋅ ([M] ⋅ (po ⋅ [W]))).
 Definition ppo := r1 ⊔ (r2 ⊔ (r3 ⊔ (r4 ⊔ (r5 ⊔ (r6 ⊔ (r7 ⊔ (r8 ⊔ (r9 ⊔ (r10 ⊔ (r11 ⊔ (r12 ⊔ r13))))))))))).
-Definition obsco := let ww := po_loc ⊓ cartesian W W in let rw := rf ⋅ (po_loc ⊓ cartesian R W) in let wr := (po_loc ⊓ cartesian W R) ⋅ rf° ⊓ !id in let rr := rf ⋅ ((po_loc ⊓ cartesian R R) ⋅ rf°) ⊓ !id in ww ⊔ (rw ⊔ (wr ⊔ rr)).
-Definition rmwco := let _RMW := R ⊓ W in rf ⊓ cartesian W _RMW.
+Definition obsco := let ww := po_loc ⊓ [W] ⋅ top ⋅ [W] in let rw := rf ⋅ (po_loc ⊓ [R] ⋅ top ⋅ [W]) in let wr := (po_loc ⊓ [W] ⋅ top ⋅ [R]) ⋅ rf° ⊓ !id in let rr := rf ⋅ ((po_loc ⊓ [R] ⋅ top ⋅ [R]) ⋅ rf°) ⊓ !id in ww ⊔ (rw ⊔ (wr ⊔ rr)).
+Definition rmwco := let _RMW := R ⊓ W in rf ⊓ [W] ⋅ top ⋅ [_RMW].
 Definition cobase := obsco ⊔ (rmwco ⊔ co0).
 Definition ConsCo := acyclic cobase.
 (* Definition of co_locs already included in the prelude *)

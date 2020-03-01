@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model RC11 *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition A := unknown_set "A".
 Definition ACQ := unknown_set "ACQ".
 Definition ACQ_REL := unknown_set "ACQ_REL".
@@ -44,10 +43,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -66,24 +65,24 @@ Definition fri := fr ⊓ int.
 Definition fre := fr ⊓ !fri.
 Definition mo := co.
 Definition sb := po.
-Definition myrmw := diagonal RMW ⊔ rmw.
+Definition myrmw := [RMW] ⊔ rmw.
 Definition rb := rf° ⋅ mo ⊓ !id.
 Definition eco := (rf ⊔ (mo ⊔ rb))^+.
-Definition rs := diagonal W ⋅ ((sb ⊓ loc ⊔ 1) ⋅ (diagonal (W ⊓ (RLX ⊔ (REL ⊔ (ACQ_REL ⊔ (ACQ ⊔ SC))))) ⋅ (rf ⋅ myrmw)^*)).
-Definition sw := diagonal (REL ⊔ (ACQ_REL ⊔ SC)) ⋅ ((diagonal F ⋅ sb ⊔ 1) ⋅ (rs ⋅ (rf ⋅ (diagonal (R ⊓ (RLX ⊔ (REL ⊔ (ACQ ⊔ (ACQ_REL ⊔ SC))))) ⋅ ((sb ⋅ diagonal F ⊔ 1) ⋅ diagonal (ACQ ⊔ (ACQ_REL ⊔ SC))))))).
+Definition rs := [W] ⋅ ((sb ⊓ loc ⊔ 1) ⋅ ([(W ⊓ (RLX ⊔ (REL ⊔ (ACQ_REL ⊔ (ACQ ⊔ SC)))))] ⋅ (rf ⋅ myrmw)^*)).
+Definition sw := [(REL ⊔ (ACQ_REL ⊔ SC))] ⋅ (([F] ⋅ sb ⊔ 1) ⋅ (rs ⋅ (rf ⋅ ([(R ⊓ (RLX ⊔ (REL ⊔ (ACQ ⊔ (ACQ_REL ⊔ SC)))))] ⋅ ((sb ⋅ [F] ⊔ 1) ⋅ [(ACQ ⊔ (ACQ_REL ⊔ SC))]))))).
 Definition hb := (sb ⊔ sw)^+.
 Definition sbl := sb ⊓ !loc.
 Definition hbl := hb ⊓ loc.
 Definition scb := sb ⊔ (sbl ⋅ (hb ⋅ sbl) ⊔ (hbl ⊔ (mo ⊔ rb))).
-Definition pscb := (diagonal SC ⊔ diagonal (F ⊓ SC) ⋅ (hb ⊔ 1)) ⋅ (scb ⋅ (diagonal SC ⊔ (hb ⊔ 1) ⋅ diagonal (F ⊓ SC))).
-Definition pscf := diagonal (F ⊓ SC) ⋅ ((hb ⊔ hb ⋅ (eco ⋅ hb)) ⋅ diagonal (F ⊓ SC)).
+Definition pscb := ([SC] ⊔ [(F ⊓ SC)] ⋅ (hb ⊔ 1)) ⋅ (scb ⋅ ([SC] ⊔ (hb ⊔ 1) ⋅ [(F ⊓ SC)])).
+Definition pscf := [(F ⊓ SC)] ⋅ ((hb ⊔ hb ⋅ (eco ⋅ hb)) ⋅ [(F ⊓ SC)]).
 Definition psc := pscb ⊔ pscf.
-Definition cnf := (cartesian W top ⊔ cartesian top W) ⊓ loc ⊓ !(cartesian IW top ⊔ cartesian top IW).
-Definition dr := cnf ⊓ ext ⊓ !(hb ⊔ (hb° ⊔ cartesian A A)).
+Definition cnf := ([W] ⋅ top ⋅ [top] ⊔ [top] ⋅ top ⋅ [W]) ⊓ loc ⊓ !([IW] ⋅ top ⋅ [top] ⊔ [top] ⋅ top ⋅ [IW]).
+Definition dr := cnf ⊓ ext ⊓ !(hb ⊔ (hb° ⊔ [A] ⋅ top ⋅ [A])).
 Definition co0_0 := hb ⋅ eco ⊔ (hb ⊔ myrmw ⋅ eco).
 Definition at0 := myrmw ⊓ rb ⋅ mo.
-Definition sc0 := psc^* ⊓ diagonal E.
-Definition th0 := (sb ⊔ rf)^* ⊓ diagonal E.
+Definition sc0 := psc^* ⊓ [E].
+Definition th0 := (sb ⊔ rf)^* ⊓ [E].
 Definition Dr := is_empty dr.
 Definition coherence1 := irreflexive (hb ⋅ (eco ⊔ 1)).
 Definition coherencermw := irreflexive (myrmw ⋅ eco).

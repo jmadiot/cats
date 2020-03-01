@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model TSO *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition MFENCE := unknown_set "MFENCE".
 Definition rmw := unknown_relation "rmw".
 Definition sm := unknown_relation "sm".
@@ -39,10 +38,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -53,23 +52,23 @@ Definition lfence : relation events := (*failed: try fencerel LFENCE with 0*) 0.
 Definition sfence : relation events := (*failed: try fencerel SFENCE with 0*) 0.
 Definition A := ((*failed: try X with emptyset_0*) emptyset_0) ⊔ ((*failed: try A with emptyset_0*) emptyset_0).
 Definition P := M ⊓ !A.
-Definition WW r := r ⊓ cartesian W W.
-Definition WR r := r ⊓ cartesian W R.
-Definition RW r := r ⊓ cartesian R W.
-Definition RR r := r ⊓ cartesian R R.
-Definition RM r := r ⊓ cartesian R M.
-Definition MR r := r ⊓ cartesian M R.
-Definition WM r := r ⊓ cartesian W M.
-Definition MW r := r ⊓ cartesian M W.
-Definition MM r := r ⊓ cartesian M M.
-Definition AA r := r ⊓ cartesian A A.
-Definition AP r := r ⊓ cartesian A P.
-Definition PA r := r ⊓ cartesian P A.
-Definition PP r := r ⊓ cartesian P P.
-Definition AM r := r ⊓ cartesian A M.
-Definition MA r := r ⊓ cartesian M A.
+Definition WW r := r ⊓ [W] ⋅ top ⋅ [W].
+Definition WR r := r ⊓ [W] ⋅ top ⋅ [R].
+Definition RW r := r ⊓ [R] ⋅ top ⋅ [W].
+Definition RR r := r ⊓ [R] ⋅ top ⋅ [R].
+Definition RM r := r ⊓ [R] ⋅ top ⋅ [M].
+Definition MR r := r ⊓ [M] ⋅ top ⋅ [R].
+Definition WM r := r ⊓ [W] ⋅ top ⋅ [M].
+Definition MW r := r ⊓ [M] ⋅ top ⋅ [W].
+Definition MM r := r ⊓ [M] ⋅ top ⋅ [M].
+Definition AA r := r ⊓ [A] ⋅ top ⋅ [A].
+Definition AP r := r ⊓ [A] ⋅ top ⋅ [P].
+Definition PA r := r ⊓ [P] ⋅ top ⋅ [A].
+Definition PP r := r ⊓ [P] ⋅ top ⋅ [P].
+Definition AM r := r ⊓ [A] ⋅ top ⋅ [M].
+Definition MA r := r ⊓ [M] ⋅ top ⋅ [A].
 Definition noid r : relation events := r ⊓ !id.
-Definition atom := diagonal A.
+Definition atom := [A].
 (* Definition of co_locs already included in the prelude *)
 (* Definition of cross already included in the prelude *)
 Definition generate_orders s pco := cross (co_locs pco (partition s)).
@@ -83,11 +82,11 @@ Definition fri := fr ⊓ int.
 Definition fre := fr ⊓ !fri.
 Definition test := acyclic (po_loc ⊔ (rf ⊔ (fr ⊔ co))).
 Definition test_0 := is_empty (rmw ⊓ fre ⋅ coe).
-Definition poWR := diagonal W ⋅ (po ⋅ diagonal R).
-Definition i1 := poWR ⋅ diagonal A.
-Definition i2 := diagonal A ⋅ poWR.
+Definition poWR := [W] ⋅ (po ⋅ [R]).
+Definition i1 := poWR ⋅ [A].
+Definition i2 := [A] ⋅ poWR.
 Definition implied := i1 ⊔ i2.
-Definition ppo := diagonal R ⋅ (po ⋅ diagonal R) ⊔ (diagonal M ⋅ (po ⋅ diagonal W) ⊔ (diagonal M ⋅ (po ⋅ (diagonal MFENCE ⋅ (po ⋅ diagonal M))) ⊔ implied)).
+Definition ppo := [R] ⋅ (po ⋅ [R]) ⊔ ([M] ⋅ (po ⋅ [W]) ⊔ ([M] ⋅ (po ⋅ ([MFENCE] ⋅ (po ⋅ [M]))) ⊔ implied)).
 Definition ghb := ppo ⊔ (rfe ⊔ (fr ⊔ co)) ⋅ sm.
 Definition tso := acyclic ghb.
 Definition witness_conditions := generate_cos cobase co.

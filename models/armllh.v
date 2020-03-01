@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/LICENSE.txt *)
 (* Translation of model Relaxed ARM llh model *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition X := unknown_set "X".
 Definition tag2events := unknown_relation "tag2events".
 Definition emptyset_0 : set events := domain 0.
@@ -37,10 +36,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -48,26 +47,26 @@ Definition singlestep (R : relation events) := nodetour R R R.
 Definition LKW := (*failed: try LKW with emptyset_0*) emptyset_0.
 Definition A := ((*successful: try X with emptyset_0*) X) ⊔ ((*failed: try A with emptyset_0*) emptyset_0).
 Definition P := M ⊓ !A.
-Definition WW r := r ⊓ cartesian W W.
-Definition WR r := r ⊓ cartesian W R.
-Definition RW r := r ⊓ cartesian R W.
-Definition RR r := r ⊓ cartesian R R.
-Definition RM r := r ⊓ cartesian R M.
-Definition MR r := r ⊓ cartesian M R.
-Definition WM r := r ⊓ cartesian W M.
-Definition MW r := r ⊓ cartesian M W.
-Definition MM r := r ⊓ cartesian M M.
-Definition AA r := r ⊓ cartesian A A.
-Definition AP r := r ⊓ cartesian A P.
-Definition PA r := r ⊓ cartesian P A.
-Definition PP r := r ⊓ cartesian P P.
-Definition AM r := r ⊓ cartesian A M.
-Definition MA r := r ⊓ cartesian M A.
+Definition WW r := r ⊓ [W] ⋅ top ⋅ [W].
+Definition WR r := r ⊓ [W] ⋅ top ⋅ [R].
+Definition RW r := r ⊓ [R] ⋅ top ⋅ [W].
+Definition RR r := r ⊓ [R] ⋅ top ⋅ [R].
+Definition RM r := r ⊓ [R] ⋅ top ⋅ [M].
+Definition MR r := r ⊓ [M] ⋅ top ⋅ [R].
+Definition WM r := r ⊓ [W] ⋅ top ⋅ [M].
+Definition MW r := r ⊓ [M] ⋅ top ⋅ [W].
+Definition MM r := r ⊓ [M] ⋅ top ⋅ [M].
+Definition AA r := r ⊓ [A] ⋅ top ⋅ [A].
+Definition AP r := r ⊓ [A] ⋅ top ⋅ [P].
+Definition PA r := r ⊓ [P] ⋅ top ⋅ [A].
+Definition PP r := r ⊓ [P] ⋅ top ⋅ [P].
+Definition AM r := r ⊓ [A] ⋅ top ⋅ [M].
+Definition MA r := r ⊓ [M] ⋅ top ⋅ [A].
 Definition noid r : relation events := r ⊓ !id.
-Definition atom := diagonal A.
-Definition obsco := let ww := po_loc ⊓ cartesian W W in let rw := rf ⋅ (po_loc ⊓ cartesian R W) in let wr := (po_loc ⊓ cartesian W R) ⋅ rf° in let rr := 0 in (ww ⊔ (rw ⊔ (wr ⊔ rr))) ⊓ !id.
+Definition atom := [A].
+Definition obsco := let ww := po_loc ⊓ [W] ⋅ top ⋅ [W] in let rw := rf ⋅ (po_loc ⊓ [R] ⋅ top ⋅ [W]) in let wr := (po_loc ⊓ [W] ⋅ top ⋅ [R]) ⋅ rf° in let rr := 0 in (ww ⊔ (rw ⊔ (wr ⊔ rr))) ⊓ !id.
 Definition RMW_0 := R ⊓ W.
-Definition rmwco := rf ⊓ cartesian W RMW_0.
+Definition rmwco := rf ⊓ [W] ⋅ top ⋅ [RMW_0].
 Definition cobase := obsco ⊔ (rmwco ⊔ co0).
 Definition ConsCo := acyclic cobase.
 (* Definition of co_locs already included in the prelude *)
@@ -163,7 +162,7 @@ Variable Hic' : incl (ic0 ⊔ (ii' ⊔ (cc' ⊔ (ic' ⋅ cc' ⊔ ii' ⋅ ic'))))
          apply ic_ind'; exact r2.
   Qed.
 End scheme.
-Definition ppo := let ppoR := ii ⊓ cartesian R R in let ppoW := ic ⊓ cartesian R W in ppoR ⊔ ppoW.
+Definition ppo := let ppoR := ii ⊓ [R] ⋅ top ⋅ [R] in let ppoW := ic ⊓ [R] ⋅ top ⋅ [W] in ppoR ⊔ ppoW.
 Definition dmb_st_0 := WW dmb_st.
 Definition dsb_st_0 := WW dsb_st.
 Definition strong := dmb ⊔ (dsb ⊔ (dmb_st_0 ⊔ dsb_st_0)).
@@ -174,10 +173,10 @@ Definition thinair := acyclic hb.
 Definition hbstar := hb^*.
 Definition propbase := (fence ⊔ rfe ⋅ fence) ⋅ hbstar.
 Definition chapo := rfe ⊔ (fre ⊔ (coe ⊔ (fre ⋅ rfe ⊔ coe ⋅ rfe))).
-Definition prop := propbase ⊓ cartesian W W ⊔ (chapo ⊔ 1) ⋅ (propbase^* ⋅ (strong ⋅ hbstar)).
+Definition prop := propbase ⊓ [W] ⋅ top ⋅ [W] ⊔ (chapo ⊔ 1) ⋅ (propbase^* ⋅ (strong ⋅ hbstar)).
 Definition propagation := acyclic (co ⊔ prop).
 Definition observation := irreflexive (fre ⋅ (prop ⋅ hbstar)).
-Definition xx := po ⊓ cartesian X X.
+Definition xx := po ⊓ [X] ⋅ top ⋅ [X].
 Definition scXX := acyclic (co ⊔ xx).
 Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := ConsCo /\ (uniproc /\ (thinair /\ (propagation /\ (observation /\ scXX)))).

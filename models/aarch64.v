@@ -2,10 +2,9 @@
 (* https://github.com/herd/herdtools7/blob/master/herd/libdir/aarch64.cat *)
 (* Translation of model ARMv8 AArch64 *)
 From Coq Require Import Relations Ensembles String.
-From RelationAlgebra Require Import lattice prop monoid rel.
-From Catincoq Require Import Cat.
+From RelationAlgebra Require Import lattice prop monoid rel kat.
+From Catincoq Require Import Cat proprel.
 Section Model.
-Open Scope cat_scope.
 Variable c : candidate.
 Definition events := events c.
 Definition R := R c.
@@ -28,7 +27,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : Ensemble events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition T := unknown_set "T".
 Definition iico_ctrl := unknown_relation "iico_ctrl".
 Definition iico_data := unknown_relation "iico_data".
@@ -41,10 +40,10 @@ Definition tag2instrs := tag2events.
 Definition po_loc := po ⊓ loc.
 Definition rfe := rf ⊓ ext.
 Definition rfi := rf ⊓ int.
-Definition co0 := loc ⊓ (cartesian IW (W ⊓ !IW) ⊔ cartesian (W ⊓ !FW) FW).
-Definition toid s : relation events := diagonal s.
-Definition fencerel B := (po ⊓ cartesian top B) ⋅ po.
-Definition ctrlcfence CFENCE := (ctrl ⊓ cartesian top CFENCE) ⋅ po.
+Definition co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]).
+Definition toid (s : set events) : relation events := [s].
+Definition fencerel (B : set events) := (po ⊓ [top] ⋅ top ⋅ [B]) ⋅ po.
+Definition ctrlcfence (CFENCE : set events) := (ctrl ⊓ [top] ⋅ top ⋅ [CFENCE]) ⋅ po.
 Definition imply (A : relation events) (B : relation events) := !A ⊔ B.
 Definition nodetour (R1 : relation events) (R2 : relation events) (R3 : relation events) := R1 ⊓ !(R2 ⋅ R3).
 Definition singlestep (R : relation events) := nodetour R R R.
@@ -107,14 +106,14 @@ Definition dmb_st_0 := DMB_ISHST ⊔ (DMB_OSHST ⊔ (DMB_ST ⊔ dsb_st_0)).
 Definition Assuming_common_inner_shareable_domain := not (is_empty ((dmb_full ⊔ (dmb_ld_0 ⊔ dmb_st_0)) ⊓ !(DMB_SY ⊔ (DMB_LD ⊔ (DMB_ST ⊔ (DSB_SY ⊔ (DSB_LD ⊔ DSB_ST))))))).
 Definition intrinsic := (iico_data ⊔ iico_ctrl)^+.
 Definition ca := fr ⊔ co.
-Definition lrs := diagonal W ⋅ ((po_loc ⊓ !(po_loc ⋅ (diagonal W ⋅ po_loc))) ⋅ diagonal R).
-Definition lws := po_loc ⋅ diagonal W.
+Definition lrs := [W] ⋅ ((po_loc ⊓ !(po_loc ⋅ ([W] ⋅ po_loc))) ⋅ [R]).
+Definition lws := po_loc ⋅ [W].
 Definition si := sm.
 Definition obs := rfe ⊔ (fre ⊔ coe).
-Definition dob := addr ⊔ (data ⊔ (ctrl ⋅ diagonal W ⊔ ((ctrl ⊔ addr ⋅ po) ⋅ (diagonal ISB ⋅ (po ⋅ diagonal R)) ⊔ (addr ⋅ (po ⋅ diagonal W) ⊔ (addr ⊔ data) ⋅ lrs)))).
-Definition aob := rmw ⊔ diagonal (range rmw) ⋅ (lrs ⋅ diagonal (A ⊔ Q)).
-Definition bob := po ⋅ ((diagonal dmb_full ⊔ diagonal A ⋅ (amo ⋅ diagonal L)) ⋅ po) ⊔ (diagonal L ⋅ (po ⋅ diagonal A) ⊔ (diagonal (R ⊓ !NoRet) ⋅ (po ⋅ (diagonal dmb_ld_0 ⋅ po)) ⊔ (diagonal (A ⊔ Q) ⋅ po ⊔ (diagonal W ⋅ (po ⋅ (diagonal dmb_st_0 ⋅ (po ⋅ diagonal W))) ⊔ po ⋅ diagonal L)))).
-Definition tob := diagonal (R ⊓ T) ⋅ (intrinsic ⋅ diagonal (M ⊓ !T)).
+Definition dob := addr ⊔ (data ⊔ (ctrl ⋅ [W] ⊔ ((ctrl ⊔ addr ⋅ po) ⋅ ([ISB] ⋅ (po ⋅ [R])) ⊔ (addr ⋅ (po ⋅ [W]) ⊔ (addr ⊔ data) ⋅ lrs)))).
+Definition aob := rmw ⊔ [(range rmw)] ⋅ (lrs ⋅ [(A ⊔ Q)]).
+Definition bob := po ⋅ (([dmb_full] ⊔ [A] ⋅ (amo ⋅ [L])) ⋅ po) ⊔ ([L] ⋅ (po ⋅ [A]) ⊔ ([(R ⊓ !NoRet)] ⋅ (po ⋅ ([dmb_ld_0] ⋅ po)) ⊔ ([(A ⊔ Q)] ⋅ po ⊔ ([W] ⋅ (po ⋅ ([dmb_st_0] ⋅ (po ⋅ [W]))) ⊔ po ⋅ [L])))).
+Definition tob := [(R ⊓ T)] ⋅ (intrinsic ⋅ [(M ⊓ !T)]).
 Inductive lob : relation _ := lob_c : incl (lws ⋅ si ⊔ (dob ⊔ (aob ⊔ (bob ⊔ (tob ⊔ lob ⋅ lob))))) lob.
 Section scheme.
 Variables lob' : relation events.
