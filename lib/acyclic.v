@@ -113,6 +113,13 @@ Proof.
   ka.
 Qed.
 
+Lemma irreflexive_union {X} (R S : relation X) :
+  irreflexive (R ⊔ S) <-> irreflexive R /\ irreflexive S.
+Proof.
+  unfold irreflexive.
+  compute; intuition eauto.
+Qed.
+
 Lemma cycle_break {X} (R S : relation X) :
   is_transitive R ->
   is_transitive S ->
@@ -120,13 +127,40 @@ Lemma cycle_break {X} (R S : relation X) :
    irreflexive R /\
    irreflexive S /\
    acyclic (R ⋅ S)).
-Admitted.
+Proof.
+  intros TR TS.
+  split.
+  - (* easy direction *)
+    rewrite !acyclic_irreflexive.
+    intros A; repeat split; revert A; apply irreflexive_leq; ka.
+  - intros (r & s & rs).
+    rewrite acyclic_irreflexive.
+    assert (E : (R ⊔ S)^+ ≡ R^+ ⊔ S^+
+                       ⊔ (R^+⋅S^+)^+ ⊔ S^+⋅(R^+⋅S^+)^*⋅R^+
+                       ⊔ (R^+⋅S^+)^+⋅R^+ ⊔ S^+⋅(R^+⋅S^+)^+)
+      by ka.
+    rewrite E.
+    rewrite (itr_transitive TR), (itr_transitive TS).
+    repeat rewrite irreflexive_union; repeat split; auto.
+    + rewrite irreflexive_compose.
+      ra_normalise.
+      apply rs.
+    + rewrite irreflexive_compose.
+      apply irreflexive_leq with ((R⋅S)^+); auto.
+      rewrite <-(itr_transitive TR).
+      ka.
+    + rewrite irreflexive_compose.
+      apply irreflexive_leq with ((R⋅S)^+); auto.
+      rewrite <-(itr_transitive TS).
+      ka.
+Qed.
 
 Definition is_irreflexive {X} (R : relation X) := R ⊓ 1 ≦ 0.
 
 Lemma is_irreflexive_spec {X} (R : relation X) : irreflexive R <-> is_irreflexive R.
 Proof.
-Admitted.
+  reflexivity.
+Qed.
 
 Definition is_acyclic {X} (R : relation X) := R^+ ⊓ 1 ≦ 0.
 

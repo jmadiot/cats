@@ -52,18 +52,18 @@ Set Printing Universes.
 between types in this universe form a kleene algebra.  *)
 
 Universe U.
-Definition hrel (n m: Type@{U}) := n -> m -> Prop.
+Definition dprop_hrel (n m: Type@{U}) := n -> m -> Prop.
 
 (** * Relations as a (bounded, distributive) lattice *)
 
 (** lattice operations and laws are obtained for free, by two
    successive pointwise liftings of the [Prop] lattice *)
 
-Canonical Structure hrel_lattice_ops n m :=
-  lattice.mk_ops (hrel n m) leq weq cup cap neg bot top.
+Canonical Structure dprop_hrel_lattice_ops n m :=
+  lattice.mk_ops (dprop_hrel n m) leq weq cup cap neg bot top.
 
-Global Instance hrel_lattice_laws n m:
-  lattice.laws (BDL+STR+CNV+DIV) (hrel_lattice_ops n m) := pw_laws _.
+Global Instance dprop_hrel_lattice_laws n m:
+  lattice.laws (BDL+STR+CNV+DIV) (dprop_hrel_lattice_ops n m) := pw_laws _.
 
 (** * Relations as a residuated Kleene allegory *)
 
@@ -71,29 +71,29 @@ Section RepOps.
   Implicit Types n m p : Type@{U}.
 
 (** relational composition *)
-Definition hrel_dot n m p (x: hrel n m) (y: hrel m p): hrel n p :=
+Definition dprop_hrel_dot n m p (x: dprop_hrel n m) (y: dprop_hrel m p): dprop_hrel n p :=
   fun i j => exists2 k, x i k & y k j.
 
 (** converse (or transpose) *)
-Definition hrel_cnv n m (x: hrel n m): hrel m n :=
+Definition dprop_hrel_cnv n m (x: dprop_hrel n m): dprop_hrel m n :=
   fun i j => x j i.
 
 (** left / right divisions *)
-Definition hrel_ldv n m p (x: hrel n m) (y: hrel n p): hrel m p :=
+Definition dprop_hrel_ldv n m p (x: dprop_hrel n m) (y: dprop_hrel n p): dprop_hrel m p :=
   fun i j => forall k, x k i -> y k j.
 
-Definition hrel_rdv n m p (x: hrel m n) (y: hrel p n): hrel p m :=
+Definition dprop_hrel_rdv n m p (x: dprop_hrel m n) (y: dprop_hrel p n): dprop_hrel p m :=
   fun j i => forall k, x i k -> y j k.
 
 Section i.
   Variable n: Type@{U}.
-  Variable x: hrel n n.
+  Variable x: dprop_hrel n n.
   (** finite iterations of a relation *)
-  Fixpoint iter u := match u with O => @eq _ | S u => hrel_dot _ _ _ x (iter u) end.
+  Fixpoint iter u := match u with O => @eq _ | S u => dprop_hrel_dot _ _ _ x (iter u) end.
   (** Kleene star (reflexive transitive closure) *)
-  Definition hrel_str: hrel n n := fun i j => exists u, iter u i j.
+  Definition dprop_hrel_str: dprop_hrel n n := fun i j => exists u, iter u i j.
   (** strict iteration (transitive closure) *)
-  Definition hrel_itr: hrel n n := hrel_dot n n n x hrel_str.
+  Definition dprop_hrel_itr: dprop_hrel n n := dprop_hrel_dot n n n x dprop_hrel_str.
 End i.
 
 End RepOps.
@@ -107,17 +107,18 @@ the type argument to [eq]). Without the eta-expansion, the definition
 would yield the constraint [U = Coq.Init.Logig.8], which is too strong
 and leads to universe inconsistencies later on. *)
 
-Canonical Structure hrel_monoid_ops :=
-  monoid.mk_ops Type@{U} hrel_lattice_ops hrel_dot (fun n => @eq n) hrel_itr hrel_str hrel_cnv hrel_ldv hrel_rdv.
+Canonical Structure dprop_hrel_monoid_ops :=
+  monoid.mk_ops Type@{U} dprop_hrel_lattice_ops dprop_hrel_dot (fun n => @eq n)
+                dprop_hrel_itr dprop_hrel_str dprop_hrel_cnv dprop_hrel_ldv dprop_hrel_rdv.
 
 (** binary relations form a residuated Kleene allegory *)
-Instance hrel_monoid_laws: monoid.laws (BDL+STR+CNV+DIV) hrel_monoid_ops.
+Instance dprop_hrel_monoid_laws: monoid.laws (BDL+STR+CNV+DIV) dprop_hrel_monoid_ops.
 Proof.
   assert (dot_leq: forall n m p : Type@{U},
-   Proper (leq ==> leq ==> leq) (hrel_dot n m p)).
+   Proper (leq ==> leq ==> leq) (dprop_hrel_dot n m p)).
    intros n m p x y H x' y' H' i k [j Hij Hjk]. exists j. apply H, Hij. apply H', Hjk.
   constructor; (try now left); intros.
-   apply hrel_lattice_laws.
+   apply dprop_hrel_lattice_laws.
    intros i j. firstorder.
    intros i j. firstorder congruence.
    intros i j. firstorder.
@@ -125,9 +126,9 @@ Proof.
    intros x y E i j. apply E.
    intros i j E. exists O. exact E.
    intros i k [j Hij [u Hjk]]. exists (S u). firstorder.
-   assert (E: forall i, (iter n x i: hrel n n) ⋅ z ≦ z).
+   assert (E: forall i, (iter n x i: dprop_hrel n n) ⋅ z ≦ z).
     induction i. simpl. firstorder now subst.
-    rewrite <-H0 at 2. transitivity (x⋅((iter n x i: hrel n n)⋅z)).
+    rewrite <-H0 at 2. transitivity (x⋅((iter n x i: dprop_hrel n n)⋅z)).
      simpl. firstorder congruence. now apply dot_leq.
     intros i j [? [? ?] ?]. eapply E. repeat eexists; eauto.
    reflexivity.
@@ -143,18 +144,18 @@ Qed.
 
 (** "decidable" sets or predicates: functions to decidable prop *)
 
-Definition dpset: ob hrel_monoid_ops -> lattice.ops := fun Y => pw_ops dprop_lattice_ops Y.
+Definition dpset: ob dprop_hrel_monoid_ops -> lattice.ops := fun Y => pw_ops dprop_lattice_ops Y.
 
 (** injection of decidable prop predicates into relations, as sub-identities *)
-Definition hrel_dpset_inj n (x: dpset n): hrel n n := fun i j => i=j /\ proj1_sig (x i).
+Definition dprop_hrel_inj n (x: dpset n): dprop_hrel n n := fun i j => i=j /\ proj1_sig (x i).
 
 (** packing relations and decidable prop sets as a Kleene algebra with tests *)
 
-Canonical Structure hrel_dpset_kat_ops :=
-  kat.mk_ops hrel_monoid_ops dpset hrel_dpset_inj.
+Canonical Structure dprop_hrel_kat_ops :=
+  kat.mk_ops dprop_hrel_monoid_ops dpset dprop_hrel_inj.
 
 
-Lemma iter_S {n} {x : hrel_dpset_kat_ops n n} {i} :
+Lemma iter_S {n} {x : dprop_hrel_kat_ops n n} {i} :
   forall a c,
     iter n x (S i) a c -> exists b, iter n x i a b /\ x b c.
 Proof.
@@ -164,7 +165,7 @@ Proof.
 Qed.
 
 Constraint U < pw.
-Instance hrel_dpset_kat_laws: kat.laws hrel_dpset_kat_ops.
+Instance dprop_hrel_dpset_kat_laws: kat.laws dprop_hrel_kat_ops.
 Proof.
   constructor.
   - constructor.
@@ -191,15 +192,17 @@ Proof.
     + intros [c [<- ?] [<- ?]]. firstorder.
 Qed.
 
+(*
 (** * Functional relations  *)
 
-Definition frel {A B: Set} (f: A -> B): hrel A B := fun x y => y = f x.
+Definition drop_frel {A B: Set} (f: A -> B): dprop_hrel A B := fun x y => y = f x.
 
-Lemma frel_comp {A B C: Set} (f: A -> B) (g: B -> C): frel f ⋅ frel g ≡ frel (fun x => g (f x)).
+Lemma frel_comp {A B C: Set} (f: A -> B) (g: B -> C): drop_frel f ⋅ drop_frel g ≡ drop_frel (fun x => g (f x)).
 Proof.
   apply antisym. intros x z [y -> ->]. reflexivity.
   simpl. intros x z ->. eexists; reflexivity.
 Qed.
 
-Instance frel_weq {A B}: Proper (pwr eq ==> weq) (@frel A B).
-Proof. unfold frel; split; intros ->; simpl. apply H. apply eq_sym, H. Qed.
+Instance drop_frel_weq {A B}: Proper (pwr eq ==> weq) (@drop_frel A B).
+Proof. unfold drop_frel; split; intros ->; simpl. apply H. apply eq_sym, H. Qed.
+*)

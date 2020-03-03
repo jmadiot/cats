@@ -90,6 +90,7 @@ Proof.
   compute; auto.
 Qed.
 
+(* the proof below has been moved in lib/aycyclic *)
 Lemma cycle_break {X} (R S : relation X) :
   is_transitive R ->
   is_transitive S ->

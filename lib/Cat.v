@@ -5,20 +5,19 @@ From RelationAlgebra Require Import lattice kat.
 From Catincoq Require Import proprel.
 
 Definition set := dpset.
-Definition relation A := hrel A A.
+Definition relation A := dprop_hrel A A.
 
 Definition union `{lattice.ops} := cup.
 Definition intersection `{lattice.ops} := cap.
 Definition complement `{lattice.ops} := neg.
-Definition diff `{lattice.ops} x y := cap x (neg y).
+Definition diff `{lattice.ops} := fun x y => cap x (neg y).
 Definition incl `{lattice.ops} := leq.
 
 Definition empty `{lattice.ops} := bot.
-Definition is_empty `{ops : lattice.ops} (x : car ops) := x ≦ bot.
+Definition is_empty `{lattice.ops} (x : car _) := x ≦ bot.
 Definition rel_seq {A} : relation A -> relation A -> relation A := dot A A A.
 Definition rel_inv {A} : relation A -> relation A := cnv A A.
-Definition cartesian {A} : dpset A -> dpset A -> relation A :=
-  fun X Y x y => proj1_sig (X x) /\ proj1_sig (Y y).
+Definition cartesian {A} (X Y : dpset A) : relation A := [X] ⋅ top ⋅ [Y].
 Definition id {A} : relation A := 1.
 
 Definition dprop_of_prop (P : Prop) : dprop := exist _ P (classic P).
@@ -28,8 +27,8 @@ Definition range  {A} : relation A -> dpset A := fun R y => dprop_of_prop (exist
 Definition irreflexive {A} (R : relation A) := cap R 1 ≦ bot.
 
 Notation refl_clos := (fun R => cap R 1) (only parsing).
-Notation trans_clos := (hrel_itr _) (only parsing).
-Notation refl_trans_clos := (hrel_str _) (only parsing).
+Notation trans_clos := (dprop_hrel_itr _) (only parsing).
+Notation refl_trans_clos := (dprop_hrel_str _) (only parsing).
 
 Definition Ensemble_of_dpset {A} (X : dpset A) : Ensemble A := fun a => proj1_sig (X a).
 
@@ -39,8 +38,17 @@ Class StrictTotalOrder {A} (R : relation A) :=
   { StrictTotalOrder_Strict :> StrictOrder R;
     StrictTotalOrder_Total : forall a b, a <> b -> (R a b \/ R b a) }.
 
-Definition linearisations {A} (X : dpset A) (R : relation A) : Ensemble (relation A) :=
-  fun S => StrictTotalOrder S /\ incl R S.
+Class StrictTotalOrder_on {A} (E : Ensemble A) (R : relation A) :=
+  { StrictTotalOrder_on_Strict :> StrictOrder R;
+    StrictTotalOrder_on_Total : forall a b, a <> b -> (E a /\ E b) <-> (R a b \/ R b a) }.
+
+Definition strict_total_order_on {A}  (E : dpset A) (R : relation A) :=
+  R ⊓ 1 ≡ 0 /\
+  R ⋅ R ≦ R /\
+  [E] ⋅ !1 ⋅ [E] ≡ R ⊔ R°.
+
+Definition linearisations {A} (E : dpset A) (R : relation A) : Ensemble (relation A) :=
+  fun S => strict_total_order_on E S /\ [E] ⋅ R ⋅ [E] ≦ S.
 
 Definition linearisations_for_co_locs {A} (X : Ensemble A) (R : relation A) : Ensemble (relation A) :=
   fun S => StrictTotalOrder S /\ incl R S.
