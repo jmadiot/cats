@@ -3,7 +3,7 @@
 (* Translation of model Generate co's (mo's) for c11, ie on atomic writes only ?? *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -65,7 +66,7 @@ Definition witness_conditions := generate_orders (W ⊓ (A ⊔ I)) mobase mo.
 Definition model_conditions := True.
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc A I coi tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos mobase moi moe co coe coi_0 fr fri fre witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc A I coi tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos mobase moi moe co coe coi_0 fr fri fre witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists mo : relation (events c),

@@ -3,7 +3,7 @@
 (* Translation of model Model *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -219,7 +220,7 @@ Definition witness_conditions := generate_cos co0 co.
 Definition model_conditions := uniproc /\ (thinair /\ (propagation /\ (observation /\ scXX))).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc X tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW A P WW WR RW RR RM MR WM MW MM AA AP PA PP AM MA noid atom generate_orders generate_cos fr fre coe uniproc dd rdw detour addrpo dmb_st dsb_st dmb dsb isb ctrlisb DMB_ISH DMB_ISHLD DMB_ISHST DSB_ISH DSB_ISHLD DSB_ISHST DMB_SY DMB_ST DMB_LD DSB_SY DSB_ST DSB_LD DMB_OSH DSB_OSH DMB_OSHLD DSB_OSHLD DMB_OSHST DSB_OSHST ISB A_0 L Q NoRet dmb_ish dmb_ishld dmb_ishst dmb_fullsy dmb_fullst dmb_fullld dmb_sy dmb_st_0 dmb_ld dsb_sy dsb_st_0 dsb_ld isb_0 ctrlisb_0 sync lwsync eieio isync ctrlisync ctrlcfence_0 ci0 ii0 cc0 ic0 ppo lwsync_eff eieio_eff dmb_st_eff dsb_st_eff f64 strong light fence hb thinair hbstar propbase chapo prop propagation observation xx scXX witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc X tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW A P WW WR RW RR RM MR WM MW MM AA AP PA PP AM MA noid atom generate_orders generate_cos fr fre coe uniproc dd rdw detour addrpo dmb_st dsb_st dmb dsb isb ctrlisb DMB_ISH DMB_ISHLD DMB_ISHST DSB_ISH DSB_ISHLD DSB_ISHST DMB_SY DMB_ST DMB_LD DSB_SY DSB_ST DSB_LD DMB_OSH DSB_OSH DMB_OSHLD DSB_OSHLD DMB_OSHST DSB_OSHST ISB A_0 L Q NoRet dmb_ish dmb_ishld dmb_ishst dmb_fullsy dmb_fullst dmb_fullld dmb_sy dmb_st_0 dmb_ld dsb_sy dsb_st_0 dsb_ld isb_0 ctrlisb_0 sync lwsync eieio isync ctrlisync ctrlcfence_0 ci0 ii0 cc0 ic0 ppo lwsync_eff eieio_eff dmb_st_eff dsb_st_eff f64 strong light fence hb thinair hbstar propbase chapo prop propagation observation xx scXX witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co : relation (events c),

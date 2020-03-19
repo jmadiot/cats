@@ -3,7 +3,7 @@
 (* Translation of model C++11 *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -130,7 +131,7 @@ Definition witness_conditions := generate_orders (W ⊓ (A ⊔ I)) mobase mo /\ 
 Definition model_conditions := Hb /\ (Coh /\ (Rf /\ (NaRf /\ (NaRf_0 /\ (Rmw /\ (Lo1 /\ (Lo2 /\ (S1 /\ (S2 /\ (S3 /\ (S4 /\ (S5 /\ (S6 /\ (S7 /\ (Dr /\ (unsequencedRace /\ (badLock /\ badUnlock))))))))))))))))).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL CON I LK LS REL SC UL coi tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos mobase moi moe co coe coi_0 fr fri fre crit loLU loUL lo asw sb mo_0 cacq crel ccon fr_0 dd fsb sbf rs_prime rs swra swul pp_asw sw cad dob ithbr ithb hb Hb hbl Coh vis Rf NaRf NaRf_0 Rmw Lo1 Lo2 Mutex cnf dr ur bl losbwoul lu Simm S1 S2 S3 r4 S4 S5 S6 S7 Dr unsequencedRace badLock badUnlock witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL CON I LK LS REL SC UL coi tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos mobase moi moe co coe coi_0 fr fri fre crit loLU loUL lo asw sb mo_0 cacq crel ccon fr_0 dd fsb sbf rs_prime rs swra swul pp_asw sw cad dob ithbr ithb hb Hb hbl Coh vis Rf NaRf NaRf_0 Rmw Lo1 Lo2 Mutex cnf dr ur bl losbwoul lu Simm S1 S2 S3 r4 S4 S5 S6 S7 Dr unsequencedRace badLock badUnlock witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists mo loLL S : relation (events c),

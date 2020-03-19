@@ -3,7 +3,7 @@
 (* Translation of model RC11 *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -35,7 +36,6 @@ Definition E := unknown_set "E".
 Definition REL := unknown_set "REL".
 Definition RLX := unknown_set "RLX".
 Definition SC := unknown_set "SC".
-Definition rmw := unknown_relation "rmw".
 Definition tag2events := unknown_relation "tag2events".
 Definition emptyset_0 : set events := domain 0.
 Definition partition := classes_loc.
@@ -93,7 +93,7 @@ Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := Dr /\ (coherence1 /\ (coherencermw /\ (atomicity /\ (SC_0 /\ no_thin_air)))).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL E REL RLX SC rmw tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre mo sb myrmw rb eco rs sw hb sbl hbl scb pscb pscf psc cnf dr co0_0 at0 sc0 th0 Dr coherence1 coherencermw atomicity SC_0 no_thin_air witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL E REL RLX SC tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre mo sb myrmw rb eco rs sw hb sbl hbl scb pscb pscf psc cnf dr co0_0 at0 sc0 th0 Dr coherence1 coherencermw atomicity SC_0 no_thin_air witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co : relation (events c),

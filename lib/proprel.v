@@ -1,5 +1,6 @@
 (** * Decidable propositions as a bounded distributive lattice *)
 
+From Coq Require Import Classical_Prop.
 From RelationAlgebra Require Import lattice kat.
 From RelationAlgebra Require Export prop.
 
@@ -38,7 +39,7 @@ Canonical Structure dprop_lattice_ops: lattice.ops := {|
   top := dprop_True
 |}.
 
-Instance dprop_lattice_laws: lattice.laws (BDL+STR+CNV+DIV) dprop_lattice_ops.
+Instance dprop_lattice_laws: lattice.laws (BL+STR+CNV+DIV) dprop_lattice_ops.
 Proof.
   constructor; [ constructor | .. ].
   all: repeat intros []; compute in *; try tauto.
@@ -62,8 +63,15 @@ Definition dprop_hrel (n m: Type@{U}) := n -> m -> Prop.
 Canonical Structure dprop_hrel_lattice_ops n m :=
   lattice.mk_ops (dprop_hrel n m) leq weq cup cap neg bot top.
 
+(* Having BL instead of BDL requires the excluded middle but allows
+   us to rewrite under negations *)
 Global Instance dprop_hrel_lattice_laws n m:
-  lattice.laws (BDL+STR+CNV+DIV) (dprop_hrel_lattice_ops n m) := pw_laws _.
+  lattice.laws (BL+STR+CNV+DIV) (dprop_hrel_lattice_ops n m).
+Proof.
+  constructor; try apply (pw_laws _).
+  all: try firstorder.
+  intros _ x a b. split; intros H. firstorder. apply classic.
+Qed.
 
 (** * Relations as a residuated Kleene allegory *)
 
@@ -112,7 +120,7 @@ Canonical Structure dprop_hrel_monoid_ops :=
                 dprop_hrel_itr dprop_hrel_str dprop_hrel_cnv dprop_hrel_ldv dprop_hrel_rdv.
 
 (** binary relations form a residuated Kleene allegory *)
-Instance dprop_hrel_monoid_laws: monoid.laws (BDL+STR+CNV+DIV) dprop_hrel_monoid_ops.
+Instance dprop_hrel_monoid_laws: monoid.laws (BL+STR+CNV+DIV) dprop_hrel_monoid_ops.
 Proof.
   assert (dot_leq: forall n m p : Type@{U},
    Proper (leq ==> leq ==> leq) (dprop_hrel_dot n m p)).

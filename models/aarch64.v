@@ -3,7 +3,7 @@
 (* Translation of model ARMv8 AArch64 *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -31,7 +32,6 @@ Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si =>
 Definition T := unknown_set "T".
 Definition iico_ctrl := unknown_relation "iico_ctrl".
 Definition iico_data := unknown_relation "iico_data".
-Definition rmw := unknown_relation "rmw".
 Definition sm := unknown_relation "sm".
 Definition tag2events := unknown_relation "tag2events".
 Definition emptyset_0 : set events := domain 0.
@@ -161,7 +161,7 @@ Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := Assuming_common_inner_shareable_domain /\ (internal /\ (external /\ atomic)).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc T iico_ctrl iico_data rmw sm tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre DMB_ISH DMB_ISHLD DMB_ISHST DSB_ISH DSB_ISHLD DSB_ISHST DMB_SY DMB_ST DMB_LD DSB_SY DSB_ST DSB_LD DMB_OSH DSB_OSH DMB_OSHLD DSB_OSHLD DMB_OSHST DSB_OSHST ISB A L Q NoRet dmb_ish dmb_ishld dmb_ishst dmb_fullsy dmb_fullst dmb_fullld dmb_sy dmb_st dmb_ld dsb_sy dsb_st dsb_ld isb ctrlisb dsb_full dsb_ld_0 dsb_st_0 dmb_full dmb_ld_0 dmb_st_0 Assuming_common_inner_shareable_domain intrinsic ca lrs lws si obs dob aob bob tob internal external atomic witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc T iico_ctrl iico_data sm tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre DMB_ISH DMB_ISHLD DMB_ISHST DSB_ISH DSB_ISHLD DSB_ISHST DMB_SY DMB_ST DMB_LD DSB_SY DSB_ST DSB_LD DMB_OSH DSB_OSH DMB_OSHLD DSB_OSHLD DMB_OSHST DSB_OSHST ISB A L Q NoRet dmb_ish dmb_ishld dmb_ishst dmb_fullsy dmb_fullst dmb_fullld dmb_sy dmb_st dmb_ld dsb_sy dsb_st dsb_ld isb ctrlisb dsb_full dsb_ld_0 dsb_st_0 dmb_full dmb_ld_0 dmb_st_0 Assuming_common_inner_shareable_domain intrinsic ca lrs lws si obs dob aob bob tob internal external atomic witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co : relation (events c),

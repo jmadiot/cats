@@ -3,7 +3,7 @@
 (* Translation of model Simple C11 *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -125,7 +126,7 @@ Definition witness_conditions := generate_cos cobase co /\ linearisations SC scp
 Definition model_conditions := ConsSC /\ (ConsRFna /\ (SCReads /\ (IrrHB /\ (Coh /\ (AtRMW /\ (dataRace /\ unsequencedRace)))))).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL I REL SC tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW CACQ CREL Access a_id rmw_id crel_id cacq_id sc_id asw A_0 P WW WR RW RR RM MR WM MW MM AA AP PA PP AM MA noid atom generate_orders generate_cos cobase coi coe fr fri fre rsElem breakRseq rseq fence_id fid idf sw Y hb hb_loc scp ConsSC rfNA ConsRFna S_loc minWRSC rfSCSC rfXSC X badRFSC SCReads IrrHB chapo Coh cosucc AtRMW locSomeW dr dataRace ur unsequencedRace witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc A ACQ ACQ_REL I REL SC tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW CACQ CREL Access a_id rmw_id crel_id cacq_id sc_id asw A_0 P WW WR RW RR RM MR WM MW MM AA AP PA PP AM MA noid atom generate_orders generate_cos cobase coi coe fr fri fre rsElem breakRseq rseq fence_id fid idf sw Y hb hb_loc scp ConsSC rfNA ConsRFna S_loc minWRSC rfSCSC rfXSC X badRFSC SCReads IrrHB chapo Coh cosucc AtRMW locSomeW dr dataRace ur unsequencedRace witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co S : relation (events c),

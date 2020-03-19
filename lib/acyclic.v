@@ -1,5 +1,5 @@
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.
@@ -56,7 +56,9 @@ Ltac destruct_rel :=
   repeat
     match goal with
     | |- _ ≡ _ => intros x y; split; intro
-    | |- _ ≦ _ => intros x y; intro
+    | |- _ ≦ _ => intros x y ? || intros ? ? || intro
+    | |- _ -> _ => intro
+    | |- (!_) _ _ => intro
     | H : ?R° ?x ?y |- _ => change (R° x y) with (R y x) in H
     | H : (_ ⊓ _) _ _ |- _ => destruct H as [? ?]
     | H : (_ ⊔ _) _ _ |- _ => destruct H
@@ -66,10 +68,17 @@ Ltac destruct_rel :=
     | H : (_ ⋅ 1) _ _ |- _ => destruct H as [? ? ->]
     | H : (_ ⋅ _) _ _ |- _ => destruct H
     | H : [_] _ _ |- _ => destruct H as [->]
-    | H : 1 _ _ |- _ => destruct H as [->]
+    | H : 1 _ _ |- _ => destruct H
     end.
 
 Lemma cap_cartes {X} (R : relation X) (a b : dpset X) : R ⊓ ([a] ⋅ top ⋅ [b]) ≡ [a] ⋅ R ⋅ [b].
+Proof.
+  destruct_rel.
+  exists y; hnf; auto. exists x; hnf; auto.
+  split; auto. exists y; hnf; auto. exists x; split; auto.
+Qed.
+
+Lemma cap_cartes_l {X} (R : relation X) (a b : dpset X) : ([a] ⋅ top ⋅ [b]) ⊓ R ≡ [a] ⋅ R ⋅ [b].
 Proof.
   destruct_rel.
   exists y; hnf; auto. exists x; hnf; auto.
@@ -169,28 +178,37 @@ Proof.
   split; intros A x y; specialize (A x y); rewrite A; compute; tauto.
 Qed.
 
-Lemma irreflexive_acyclic {X} (R : relation X) : acyclic R <-> irreflexive (R^+).
-Proof.
-  rewrite is_acyclic_spec, is_irreflexive_spec.
-  compute; auto.
-Qed.
-
 Lemma acyclic_itr {X} (R : relation X) : acyclic (R^+) <-> acyclic R.
 Proof.
-  rewrite 2is_acyclic_spec. unfold is_acyclic.
-  cut (R^+^+ ≡ R^+). now intros ->. ra.
+  apply irreflexive_weq. ra.
+Qed.
+
+Lemma transitive_irreflexive_acyclic {X} (R : relation X) : is_transitive R -> irreflexive R -> acyclic R.
+Proof.
+  intros t. apply irreflexive_weq. symmetry. apply itr_transitive. auto.
 Qed.
 
 Lemma acyclic_cup_itr_l {X} (R S : relation X) : acyclic (R^+ ⊔ S) <-> acyclic (R ⊔ S).
 Proof.
-  rewrite 2is_acyclic_spec. unfold is_acyclic.
-  cut ((R ⊔ S)^+ ≡ (R^+ ⊔ S)^+). now intros ->. ra.
+  apply irreflexive_weq. ra.
 Qed.
 
 Lemma acyclic_cup_itr_r {X} (R S : relation X) : acyclic (R ⊔ S^+) <-> acyclic (R ⊔ S).
 Proof.
-  rewrite 2is_acyclic_spec. unfold is_acyclic.
-  cut ((R ⊔ S)^+ ≡ (R ⊔ S^+)^+). now intros ->. ra.
+  apply irreflexive_weq. ra.
+Qed.
+
+Lemma acyclic_bot {A} : acyclic (bot : relation A).
+Proof.
+  apply leq_capx. left. ra.
+Qed.
+
+Lemma empty_acyclic {A} (R : relation A) :
+  is_empty R -> acyclic R.
+Proof.
+  unfold is_empty.
+  intros ->.
+  apply acyclic_bot.
 Qed.
 
 Lemma acyclic_cup {X} (R S : relation X) :
@@ -227,4 +245,12 @@ Proof.
     assert (E:[Dom] ≦ 1) by kat. rewrite E at 1; clear E. ra_normalise. rewrite <-!dotA.
     apply acyclic_compose.
     rewrite <-acyclic_itr in rs. revert rs. apply acyclic_leq. ka.
+Qed.
+
+Lemma acyclic_incompatible_domain_range {A} (R : relation A) X Y :
+  X ⊓ Y ≦ bot -> acyclic ([X] ⋅ R ⋅ [Y]).
+Proof.
+  intros E.
+  apply transitive_irreflexive_acyclic;
+    intros a b; destruct_rel; firstorder.
 Qed.

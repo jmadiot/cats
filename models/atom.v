@@ -3,7 +3,7 @@
 (* Translation of model Experimental model, with atomics *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -30,7 +31,6 @@ Definition emptyset : set events := empty.
 Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
 Definition A := unknown_set "A".
 Definition X := unknown_set "X".
-Definition rmw := unknown_relation "rmw".
 Definition tag2events := unknown_relation "tag2events".
 Definition emptyset_0 : set events := domain 0.
 Definition partition := classes_loc.
@@ -164,7 +164,7 @@ Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := test /\ (atomic /\ (thinair /\ (propagation /\ (observation /\ scXX)))).
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc A X rmw tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre test atomic dd rdw detour addrpo aa sync lwsync eieio isync ctrlisync WW RM RR WR ci0 ii0 cc0 ic0 ppo lwsync_0 eieio_0 strong light fence hb thinair hbstar propbase chapo prop propagation observation xx scXX witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc A X tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW generate_orders generate_cos cobase coi coe fr fri fre test atomic dd rdw detour addrpo aa sync lwsync eieio isync ctrlisync WW RM RR WR ci0 ii0 cc0 ic0 ppo lwsync_0 eieio_0 strong light fence hb thinair hbstar propbase chapo prop propagation observation xx scXX witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co : relation (events c),

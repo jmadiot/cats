@@ -3,7 +3,7 @@
 From Coq Require Import String Ensembles.
 From RelationAlgebra Require Import all.
 
-Require Import Cat.
+From Catincoq Require Import Cat.
 Require sc tso.
 
 Instance acyclic_leq A: Proper (leq --> impl) (@acyclic A).

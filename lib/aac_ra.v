@@ -81,7 +81,7 @@ Qed.
 *)
 
 
-
+(*
 From RelationAlgebra Require Import kat_tac relalg kat.
 
 
@@ -134,7 +134,7 @@ Module RelationAlegra_AAC_Instance.
 
 End RelationAlegra_AAC_Instance.
 (* Import RelationAlegra_AAC_Instance. *)
-
+*)
 
 (* Example example {X} (A:dpset X) (R S : relation X) : *)
 (*   (R ⋅ [A] ≦ R) -> *)

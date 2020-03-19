@@ -3,7 +3,7 @@
 (* Translation of model Simple ARM arch model *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -76,7 +77,7 @@ Definition witness_conditions := generate_cos cobase co.
 Definition model_conditions := uniproc /\ order.
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW dmb_st dsb_st dmb dsb isb ctrlisb generate_orders generate_cos cobase coi coe fr fri fre uniproc RW WW RR ppo dmb_st_0 dsb_st_0 fence visible F_0 order witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW dmb_st dsb_st dmb dsb isb ctrlisb generate_orders generate_cos cobase coi coe fr fri fre uniproc RW WW RR ppo dmb_st_0 dsb_st_0 fence visible F_0 order witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) :=
   exists co : relation (events c),

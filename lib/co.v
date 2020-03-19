@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq Require Import Cat proprel acyclic.
+From Catincoq.lib Require Import Cat proprel acyclic.
 Open Scope string_scope.
 Open Scope program_scope.
 

@@ -3,7 +3,7 @@
 (* Translation of model Unknown *)
 From Coq Require Import Relations Ensembles String.
 From RelationAlgebra Require Import lattice prop monoid rel kat.
-From Catincoq Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel.
 Section Model.
 Variable c : candidate.
 Definition events := events c.
@@ -23,6 +23,7 @@ Definition addr := addr c.
 Definition data := data c.
 Definition ctrl := ctrl c.
 Definition amo := amo c.
+Definition rmw := rmw c.
 Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
@@ -43,7 +44,6 @@ Definition Fence_w_w := unknown_set "Fence.w.w".
 Definition Rel := unknown_set "Rel".
 Definition Sc := unknown_set "Sc".
 Definition X := unknown_set "X".
-Definition rmw := unknown_relation "rmw".
 Definition tag2events := unknown_relation "tag2events".
 Definition emptyset_0 : set events := domain 0.
 Definition partition := classes_loc.
@@ -96,7 +96,7 @@ Definition witness_conditions := True.
 Definition model_conditions := True.
 End Model.
 
-Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo unknown_set unknown_relation M emptyset classes_loc Acq AcqRel Fence_r_r Fence_r_rw Fence_r_w Fence_rw_r Fence_rw_rw Fence_rw_w Fence_tso Fence_w_r Fence_w_rw Fence_w_w Rel Sc X rmw tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW fence_r_r fence_r_w fence_r_rw fence_w_r fence_w_w fence_w_rw fence_rw_r fence_rw_w fence_rw_rw fence_tso fence po_loc_no_w rsw AcqRel_0 AQ RL AMO RCsc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 ppo witness_conditions model_conditions : cat.
+Hint Unfold events R W IW FW B RMW F rf po int ext loc addr data ctrl amo rmw unknown_set unknown_relation M emptyset classes_loc Acq AcqRel Fence_r_r Fence_r_rw Fence_r_w Fence_rw_r Fence_rw_rw Fence_rw_w Fence_tso Fence_w_r Fence_w_rw Fence_w_w Rel Sc X tag2events emptyset_0 partition tag2instrs po_loc rfe rfi co0 toid fencerel ctrlcfence imply nodetour singlestep LKW fence_r_r fence_r_w fence_r_rw fence_w_r fence_w_w fence_w_rw fence_rw_r fence_rw_w fence_rw_rw fence_tso fence po_loc_no_w rsw AcqRel_0 AQ RL AMO RCsc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 ppo witness_conditions model_conditions : cat.
 
 Definition valid (c : candidate) := True.
 

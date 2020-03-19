@@ -4,7 +4,7 @@ From Coq Require Import Ensembles List String Relations RelationClasses Classica
 From RelationAlgebra Require Import lattice kat.
 From Catincoq Require Import proprel.
 
-Definition set := dpset.
+Notation set := dpset.
 Definition relation A := dprop_hrel A A.
 
 Definition union `{lattice.ops} := cup.
@@ -43,9 +43,10 @@ Class StrictTotalOrder_on {A} (E : Ensemble A) (R : relation A) :=
     StrictTotalOrder_on_Total : forall a b, a <> b -> (E a /\ E b) <-> (R a b \/ R b a) }.
 
 Definition strict_total_order_on {A}  (E : dpset A) (R : relation A) :=
-  R ⊓ 1 ≡ 0 /\
+  R ⊓ 1 ≦ 0 /\
   R ⋅ R ≦ R /\
-  [E] ⋅ !1 ⋅ [E] ≡ R ⊔ R°.
+  R ≦ [E] ⋅ R ⋅ [E] /\
+  [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
 
 Definition linearisations {A} (E : dpset A) (R : relation A) : Ensemble (relation A) :=
   fun S => strict_total_order_on E S /\ [E] ⋅ R ⋅ [E] ≦ S.
@@ -69,6 +70,8 @@ Definition cross {A} (Si : Ensemble (Ensemble (relation A))) : Ensemble (relatio
 Definition diagonal {A} : dpset A -> relation A := fun X => [X].
 
 (* Execution given as an argument to the model *)
+
+Definition finite (X : Type) := exists l : list X, forall x : X, List.In x l.
 
 Record candidate :=
   {
@@ -100,7 +103,31 @@ Record candidate :=
     some parts of cat files about C11 *)
     unknown_set : string -> set events;
     unknown_relation : string -> relation events;
+
+    finite_events : finite events;
+    rf_wr : rf ≦ [W] ⋅ rf ⋅ [R];
+    po_iw : po ≦ [!IW] ⋅ po ⋅ [!IW];
+    rw_disj : R ⊓ W ≦ bot;
+    iw_w : IW ≦ W;
+    fw_w : FW ≦ W;
+    rf_loc : rf ≦ loc;
+    r_rf : [R] ≦ top ⋅ rf;
+    rf_uniq : rf ⋅ rf° ≦ 1;
+    loc_eq : Equivalence loc;
   }.
 
-Hint Unfold events W R IW FW B RMW F po addr data ctrl rmw amo rf loc ext int unknown_set unknown_relation : cat_record.
+Hint Unfold events W R IW FW B RMW F
+     po addr data ctrl rmw amo rf loc ext int
+     unknown_set unknown_relation
+     finite_events
+     rf_wr
+     po_iw
+     rw_disj
+     iw_w
+     rf_loc
+     r_rf
+     rf_uniq
+     loc_eq
+  : cat_record.
+
 Hint Unfold union intersection diff incl rel_seq rel_inv : cat_defs.
