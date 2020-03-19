@@ -254,3 +254,29 @@ Proof.
   apply transitive_irreflexive_acyclic;
     intros a b; destruct_rel; firstorder.
 Qed.
+
+Lemma acyclic_cup_excl_l {X} (R S : relation X) :
+  R ⋅ S ≦ 0 ->
+  acyclic (R ⊔ S) <-> acyclic R /\ acyclic S.
+Proof.
+  intros RS.
+  rewrite acyclic_cup.
+  intuition.
+  assert (R^+⋅S^+ ≡ R^*⋅(R⋅S)⋅S^*) as -> by ka.
+  rewrite RS.
+  ra.
+Qed.
+
+Lemma  acyclic_cup_excl2_l {X} (R S : relation X) :
+  R ⋅ S ≦ 0 ->
+  S ⋅ S ≦ 0 ->
+  acyclic (R ⊔ S) <-> acyclic R.
+Proof.
+  intros RS SS.
+  rewrite acyclic_cup_excl_l; auto.
+  intuition.
+  unfold acyclic.
+  assert (S^+ ≡ S ⊔ (S⋅S)⋅S^*) as -> by ka.
+  rewrite SS. ra_normalise.
+  intros x x_ [xx <-]. apply SS. exists x; auto.
+Qed.

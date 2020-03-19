@@ -313,30 +313,30 @@ Ltac hkat_help :=
       clear H
     end.
 
-
-Lemma acyclic_cup_excl_l {X} (R S : relation X) :
-  R ⋅ S ≦ 0 ->
-  acyclic (R ⊔ S) <-> acyclic R /\ acyclic S.
-Proof.
-Admitted.
-
-Lemma  acyclic_cup_excl2_l {X} (R S : relation X) :
-  R ⋅ S ≦ 0 ->
-  S ⋅ S ≦ 0 ->
-  acyclic (R ⊔ S) <-> acyclic R.
-Admitted.
-
 Lemma transitive_dot_tst_l {X} (R : relation X) (E : dpset X) :
   is_transitive R -> is_transitive (R ⋅ [E]).
-Admitted.
+Proof.
+  unfold is_transitive.
+  assert (R⋅[E]⋅(R⋅[E]) ≦ R⋅R⋅[E]) as -> by kat.
+  intros ->; auto.
+Qed.
 
 Lemma transitive_dot_tst_r {X} (R : relation X) (E : dpset X) :
   is_transitive R -> is_transitive ([E] ⋅ R).
-Admitted.
+Proof.
+  unfold is_transitive.
+  assert ([E]⋅R⋅([E]⋅R) ≦ [E]⋅(R⋅R)) as -> by kat.
+  intros ->; auto.
+Qed.
 
 Lemma transitive_cap {X} (R S : relation X) :
   is_transitive R -> is_transitive S -> is_transitive (R ⊓ S).
-Admitted.
+Proof.
+  unfold is_transitive.
+  rewrite dotxcap, 2dotcapx.
+  intros -> ->.
+  lattice.
+Qed.
 
 Ltac t :=
   repeat

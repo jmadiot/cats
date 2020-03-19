@@ -1,7 +1,12 @@
 #!/bin/bash
 
-echo "-Q . Catincoq" > _CoqProject
+set -euxo pipefail
+IFS=$'\n\t'
 
+echo "-Q . Catincoq" > _CoqProject
+echo >> _CoqProject
+
+cd models && ./gen.sh ; cd ..
 make -C zoo clean
 make -C zoo sc_nosm.v tso_nosm.v lamport.v x86tso.v
 
