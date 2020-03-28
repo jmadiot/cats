@@ -24,24 +24,21 @@ Proof.
   - rewrite capdotx. rewrite Hx at 2. ra.
 Qed.
 
-Lemma dotcap1r (l : level) (X : ops) :
-  laws l X -> AL ≪ l ->
+Lemma dotcap1r (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
   forall (n : ob X) (x y z : X n n),
     x ≦ 1 -> (y ⊓ z) ⋅ x ≡ y ⋅ x ⊓ z.
 Proof.
-  intros H Hl n x y z Hx.
+  intros n x y z Hx.
   apply antisym.
   - rewrite dotcapx. rewrite Hx at 2. ra.
   - rewrite capxdot. rewrite Hx at 1. ra.
 Qed.
 
-
-Lemma dotcap1 (l : level) (X : ops) :
-  laws l X -> AL ≪ l ->
+Lemma dotcap1 (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
   forall (n : ob X) (u1 u2 x y : X n n),
     u1 ≦ 1 -> u2 ≦ 1 -> u1 ⋅ (x ⊓ y) ⋅ u2 ≡ u1 ⋅ x ⋅ u2 ⊓ y.
 Proof.
-  intros H Hl n u1 u2 x y H1 H2.
+  intros n u1 u2 x y H1 H2.
   rewrite dotcap1l, dotcap1r; eauto.
 Qed.
 
@@ -62,26 +59,6 @@ Lemma dotcap1_rel {X} (u1 u2 x y : relation X) :
 Proof.
   eapply dotcap1. 2:reflexivity. apply lower_laws.
 Qed.
-
-
-(* Lemma dotcaplr (l : level) (X : ops) : *)
-(*   laws l X -> CAP + AL ≪ l -> *)
-(*   forall (n : ob X) (x y z t : X n n), *)
-(*     x ≦ 1 -> t ≦ 1 -> x⋅(y ⊓ z)⋅t ≡ x⋅y⋅t ⊓ z. *)
-
-(* Lemma dot1capl {X} (R S T : relation X) : R ≦ 1 -> R ⋅ (S ⊓ T) (R ⋅ S) ⊓ T ≡ . *)
-(* Proof. *)
-(*   intros r x z; split. *)
-(*   - intros [[y xy yz] t]. exists y; firstorder. rewrite <-(r x y xy). auto. *)
-(*   - intros [y xy [s t]]. split. exists y; auto. rewrite (r x y xy). auto. *)
-(* Qed. *)
-
-(* Lemma capdot_1l {X} (R S T : relation X) : R ≦ 1 -> (S ⋅ R) ⊓ T ≡ (S ⊓ T) ⋅ R. *)
-(* Proof. *)
-(*   intros r x z; split. *)
-(*   - intros [[y xy yz] t]. exists y; firstorder. rewrite <-(r x y xy). auto. *)
-(*   - intros [y xy [s t]]. split. exists y; auto. rewrite (r x y xy). auto. *)
-(* Qed. *)
 
 Ltac destr :=
   match goal with
@@ -117,13 +94,7 @@ Proof.
     + intros <-. firstorder.
   - firstorder.
 Qed.
-(*
-Axiom sort : forall {X}, (X -> X -> bool) -> list X -> list X.
-Axiom sort_sorted : forall {X} (f : X -> X -> bool) (l : list X),
-    StronglySorted f (sort f l).
-Axiom sort_permuted : forall {X} (f : X -> X -> bool) (l : list X),
-    Permutation l (sort f l).
-*)
+
 Definition finite {A} (E : dpset A) :=
   exists (l : list A), forall a, proj1_sig (E a) -> List.In a l.
 
@@ -132,24 +103,6 @@ Definition in_at {A} (l : list A) : nat -> A -> Prop :=
 
 Definition in_before {A} (l : list A) : A -> A -> Prop :=
   fun x y => x = y \/ exists n, exists m, n <= m /\ in_at l n x /\ in_at l m y.
-
-(* Lemma sort_in_before {X} (f : X -> X -> bool) (l : list X) : *)
-(*   in_before (sort f l) *)
-
-Tactic Notation "spec" hyp(H) :=
-  match type of H with
-    forall _ : ?a, _ =>
-    let Ha := fresh in
-    assert (Ha : a); [ | specialize (H Ha); clear Ha ]
-  end.
-
-Tactic Notation "spec" hyp(H) constr(t) :=
-  specialize (H t).
-
-Tactic Notation "spec" hyp(H) "by" tactic(t) :=
-  spec H; [ now t | ].
-
-Tactic Notation "apply" "!" constr(t) := repeat apply t.
 
 (* Instead of finiteness, it is also possible to use the axiom of
 choice (or the weaker axiom "boolean ideal prime theorem")
@@ -217,52 +170,6 @@ Proof.
   - rewrite <-RS. destruct_rel. destruct (eqdec x y). right; auto. left.
     exists y. exists x; firstorder. firstorder.
 Qed.
-
-Lemma every_order_can_be_total {A} (R : relation A) :
-  partial_order R -> exists S, partial_order S /\ total_on top S /\ R ≦ S.
-Proof.
-  intros Rpo.
-  pose proof (every_order_can_be_total_on top R).
-  (* some axiom of choice here *)
-Abort.
-
-(*
-Lemma every_strict_order_can_be_total {A} (E : dpset A) (R : relation A) :
-  strict_order R ->
-  exists S,
-    strict_order S /\
-    total_on top S /\
-    R ≦ S.
-Proof.
-  intros [tr irr].
-  destruct (every_order_can_be_total (R ⊔ 1)) as (S & Sord & Stot & Sincl).
-  now apply partial_order_of_strict_order; split; auto.
-  exists (S ⊓ !1); split.
-  now apply strict_order_of_partial_order.
-  split; firstorder.
-  unfold total_on in *.
-  transitivity ([top]⋅!1⋅[top] ⊓ [top]⋅!1⋅[top] : relation A). ra.
-  rewrite Stot at 1. assert ([top]⋅!1⋅[top] ≦ (!1 : relation A)) as -> by kat. ra.
-Qed.
-
-Lemma every_strict_order_can_be_total {A} (R : relation A) :
-  strict_order R ->
-  exists S,
-    strict_order S /\
-    total_on top S /\
-    R ≦ S.
-Proof.
-  intros [tr irr].
-  destruct (every_order_can_be_total (R ⊔ 1)) as (S & Sord & Stot & Sincl).
-  now apply partial_order_of_strict_order; split; auto.
-  exists (S ⊓ !1); split.
-  now apply strict_order_of_partial_order.
-  split; firstorder.
-  unfold total_on in *.
-  transitivity ([top]⋅!1⋅[top] ⊓ [top]⋅!1⋅[top] : relation A). ra.
-  rewrite Stot at 1. assert ([top]⋅!1⋅[top] ≦ (!1 : relation A)) as -> by kat. ra.
-Qed.
-*)
 
 Lemma cnvtst {A} {E : dpset A} : [E]° ≡ [E].
 Proof.
@@ -338,30 +245,133 @@ Proof.
   lattice.
 Qed.
 
-Ltac t :=
+Tactic Notation "type" :=
   repeat
     match goal with
-    | |- (_ ⋅ [_]) ?x ?y => exists y; [ | split; auto ]
-    | |- ([_] ⋅ _) ?x ?y => exists x; [ split; auto | ]
-    | |- (_ ⊓ _) ?x ?y => split; auto
+    | Hx : ?x :: ?X |- ?x :: ?X => assumption
+    | Hx : ?x :: _ ⊓ _ |- _ => destruct Hx
+    | Hx : ?x :: ?X, Hy : ?x :: ?Y, XY : ?X ⊓ ?Y ≦ bot |- _ =>
+      eapply XY; split; eauto
+    | H : (?r ⋅ [?Y]) ?x ?v |- ?v :: ?Y => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?x ?v |- ?v :: ?Y => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?v ?y |- ?v :: ?X => destruct_rel; assumption
+    | H : ?r ?x ?v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?Y =>
+      assert (([X] ⋅ r ⋅ [Y]) x v) by apply H2, H;
+      destruct_rel; assumption
+    | H : ?r ?v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?X =>
+      assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
+      destruct_rel; assumption
+    | |- _ :: _ ⊓ _ => split
     end.
+
+Tactic Notation "type" var(v) :=
+  match goal with
+  | H : ?r ?x v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
+    assert (v :: Y) by type
+  | H : ?r v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
+    assert (v :: X) by type
+  end.
+
+Ltac t :=
+  repeat
+    (match goal with
+     | |- (_ ⋅ [_]) ?x ?y => exists y; [ | split; auto ]
+     | |- ([_] ⋅ _) ?x ?y => exists x; [ split; auto | ]
+     | |- (_ ⊓ _) ?x ?y => split; auto
+     | |- [_] ?x ?y => split; [ reflexivity | ]
+     | |- 1 ?x ?y => reflexivity
+     | |- top ?x ?y => constructor
+     end; type; try assumption).
+
+Lemma ranging_spec {A} (R : relation A) (X : set A) :
+  R ≦ R ⋅ [X] <-> (forall x y, R x y -> y :: X).
+Proof.
+  split; intros r x y xy.
+  - apply r in xy. type.
+  - t. eauto.
+Qed.
+
+Lemma ranging_itr {A} (R : relation A) (X : set A) :
+  (forall x y, R x y -> y :: X) ->
+  (forall x y, (R^+) x y -> y :: X).
+Proof.
+  rewrite <-!ranging_spec.
+  intros e; rewrite e at 1. kat.
+Qed.
+
+Lemma ranging_cup {A} (R S : relation A) (X : set A) :
+  (forall x y, R x y -> y :: X) ->
+  (forall x y, S x y -> y :: X) ->
+  (forall x y, (R ⊔ S) x y -> y :: X).
+Proof.
+  rewrite <-!ranging_spec.
+  intros e f; rewrite e, f at 1. kat.
+Qed.
+
+Lemma ranging_capl {A} (R S : relation A) (X : set A) :
+  (forall x y, R x y -> y :: X) ->
+  (forall x y, (R ⊓ S) x y -> y :: X).
+Proof.
+  rewrite <-!ranging_spec.
+  intros e; rewrite e at 1. destruct_rel. t.
+Qed.
+
+Lemma ranging_capr {A} (R S : relation A) (X : set A) :
+  (forall x y, S x y -> y :: X) ->
+  (forall x y, (R ⊓ S) x y -> y :: X).
+Proof.
+  rewrite <-!ranging_spec.
+  intros e; rewrite e at 1. destruct_rel. t.
+Qed.
+
+Lemma domrng_char {A} (R : relation A) (X Y : set A) :
+  R ≦ [X] ⋅  R  ⋅ [Y] <->
+  R ≦ [X] ⋅ top ⋅ [Y].
+Proof.
+  split. intros ->. ra. intros r x y xy. spec r x y xy. t; type.
+Qed.
 
 Lemma sc_nosm_lamport c : sc_nosm.valid c <-> lamport.valid c.
 Proof.
   unfold sc_nosm.valid, lamport.valid.
   destrunfold.
+  assert (rw_disj : R ⊓ W ≦ bot) by admit.
   split.
 
-  - intros (co & Hco & atomic & sc).
-    assert (co_loc : co ≦ loc) by admit.
-    assert (co_final : [W ⊓ !FW]⋅loc⋅[FW] ≦ co) by admit.
-    assert (co_total : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°) by admit.
-    assert (co_iw : co ⋅ [IW] ≦ 0) by admit.
-    assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]) by admit.
+  - (** Suppose we have a "sc.cat" execution, with a generated co *)
+    intros (co & Hco & atomic & sc).
+    apply generate_orders_spec_2 in Hco.
+    destruct Hco as (iwfw & co_order (* TODO USELESS? *) & co_total).
+    assert (co_loc : co ≦ loc).
+    { transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. kat. }
+    assert (co_final : [W ⊓ !FW]⋅loc⋅[FW] ≦ co).
+    { rewrite <-iwfw. rewrite capcup, 2cap_cartes. kat. }
+    assert (co_total' : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°).
+    { rewrite capC, dotcap1_rel, co_total; try kat.
+      destruct_rel. now left. now right. firstorder. }
+    assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]).
+    { apply domrng_char. transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. ra. }
+    assert (co_iw : co ⋅ [IW] ≦ 0).
+    { intros w1 w2.
+      assert (([IW] ⊔ [!IW]) w1 w1).
+      { assert (a: 1 ≦ [IW] ⊔ [!IW]) by kat. now apply a. }
+      destruct_rel.
+      - (* w1 and w2 related through IW;co;IW? no contradiction? *)
+        assert (w1 = w2) as <-. apply iw_uniq. t. now apply co_loc.
+        apply co_order. t.
+      - (* w1 is not initial: then, cycle in co *)
+        exfalso.
+        assert (co w2 w1).
+        { apply iwfw. split. now apply loc_sym, co_loc. left. t. }
+        assert (c : co w1 w1) by now apply co_order; exists w2; auto.
+        exfalso.
+        eapply co_order. t. eauto.
+    }
     remember (rf° ⋅ co ⊓ !id) as fr.
     set (com := fr ⊔ (rf ⊔ co)).
     set (M := R ⊔ W).
     set (M' := M ⊓ !IW).
+    (** We know po+com is acyclic, so we can extend it a total order *)
     destruct (every_strict_order_can_be_total_on top (po ⊔ com)^+)
       as (S & (St & Sirr) & Stot & Sincl).
     { intros; apply classic. }
@@ -371,14 +381,19 @@ Proof.
     assert (poS : po ≦ S) by (rewrite <-Sincl; kat).
     assert (coS : co ≦ S) by (rewrite <-Sincl; unfold com; kat).
     assert (frS : fr ≦ S). now rewrite <-Sincl; unfold com; kat.
+    (** This total order is the "S" of the Lamport-style definition,
+     with some subtlety about initial writes *)
     set (S' := [!IW] ⋅ S ⋅ [!IW]).
     exists S'.
     repeat apply conj; try rewrite is_empty_included.
-    (* with S from linearisations(~IW, [W\FW];loc;FW) *)
-    + (* irrefl *) unfold S'. destruct_rel. apply Sirr. split. auto. reflexivity.
-    + (* trans *) unfold S'. transitivity ([!IW] ⋅ (S ⋅ S) ⋅ [!IW]).
+    (** S is indeed a "linearisation" *)
+    + (* irreflexive *)
+      unfold S'. destruct_rel. apply Sirr. split. auto. reflexivity.
+    + (* transitive *)
+      unfold S'. transitivity ([!IW] ⋅ (S ⋅ S) ⋅ [!IW]).
       kat. rewrite St. auto.
-    + (* domain/range *) unfold S'. kat.
+    + (* domain/range *)
+      unfold S'. kat.
     + (* totality *) unfold S'. rewrite 2cnvdot, cnvtst, dotA.
       transitivity ([!IW] ⋅ (S ⊔ S°) ⋅ [!IW]). 2:ka. unfold total_on in Stot.
       rewrite <-Stot.
@@ -387,18 +402,16 @@ Proof.
       rewrite cap_cartes.
       cut ([W ⊓ !FW]⋅loc⋅[FW] ≦ S). now intros ->; auto.
       rewrite co_final. auto.
-    + (* po is included in S *)
+    + (** S extends po *)
       unfold S'. rewrite <-poS.
       rewrite po_iw at 1.
       kat.
-    + rewrite cap_cartes.
+    + (** rf can be expressed in terms of S: inclusion 1 *)
+      rewrite cap_cartes.
       rewrite cap_cartes_l.
       set (S'' := S' ⊔ [IW]⋅loc⋅[M']).
       set (WRS := [W]⋅(S'' ⊓ loc)⋅[R]).
       change (rf ≦ WRS ⊓ !(S''⋅WRS)).
-      (* let WRS = W * R & S & loc  (* Writes from the past, same location *) *)
-      (* let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *) *)
-      (* empty rf \ rf-S as RfCons *)
       apply leq_xcap.
       * (* r <= WRS *)
         unfold WRS, S'', S'. rewrite capC, capcup.
@@ -416,7 +429,7 @@ Proof.
            apply leq_xcap. rewrite rf_loc. now kat.
            assert (rf ≦ S) as <-. rewrite <-Sincl. unfold com. now kat.
            hkat_help.
-           Fail hkat.
+           (* Fail hkat. *)
            clear -rf_wr0 rf_wr1 rw_disj iw_w.
            hkat.
       * (* r <= !(S'' WRS) *)
@@ -425,32 +438,12 @@ Proof.
         { intros <-. unfold S'', S' in w1w2. destruct_rel.
           eapply Sirr; split; eauto; reflexivity.
           firstorder. }
-        Tactic Notation "type" :=
-          match goal with
-          | Hx : ?x :: ?X, Hy : ?x :: ?Y, XY : ?X ⊓ ?Y ≦ bot |- _ =>
-            eapply XY; split; eauto
-          | H : ([?X] ⋅ ?r ⋅ [?Y]) ?x ?v |- ?v :: ?Y => destruct_rel; assumption
-          | H : ([?X] ⋅ ?r ⋅ [?Y]) ?v ?y |- ?v :: ?X => destruct_rel; assumption
-          | H : ?r ?x ?v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?Y =>
-            assert (([X] ⋅ r ⋅ [Y]) x v) by apply H2, H;
-            destruct_rel; assumption
-          | H : ?r ?v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?X =>
-            assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
-            destruct_rel; assumption
-          end.
-        Tactic Notation "type" var(v) :=
-          match goal with
-          | H : ?r ?x v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
-            assert (v :: Y) by type
-          | H : ?r v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
-            assert (v :: X) by type
-          end.
         type r.
         type w1.
         assert (w2 :: W) by (unfold WRS in *; type).
-        assert (loc w1 w2). { transitivity r. now apply rf_loc.
-        symmetry. subst WRS. destruct_rel. firstorder. }
-        destruct (co_total w1 w2) as [D|D]. now t.
+        assert (loc w1 w2). { apply loc_trans with r. now apply rf_loc.
+          apply loc_sym. subst WRS. destruct_rel. firstorder. }
+        destruct (co_total' w1 w2) as [D|D]. now t.
         -- assert (fr r w2).
            { rewrite Heqfr. split. exists w1. apply w1r. apply D. intros ->. type. }
            subst WRS S'' S'. clear w1w2.
@@ -458,26 +451,28 @@ Proof.
            ++ (* left component of WRS : S *)
               assert (S r w2). now apply frS.
               assert (S r r). now eapply St; exists w2; auto.
-              eapply Sirr with r r. split; auto; reflexivity.
+              eapply Sirr with r r. t.
            ++ (* right component of WRS: IW loc M' *)
-              apply co_iw with w1 w2. exists w2; auto. split; auto.
+              apply co_iw with w1 w2. exists w2; auto; t.
         -- subst WRS S'' S'. clear w2r.
            destruct_rel.
            ++ (* left component of WRS : S *)
               assert (S w2 w1). now apply coS.
               assert (S w1 w1). eapply St; exists w2; auto.
-              eapply Sirr with w1 w1. split; auto; reflexivity.
+              eapply Sirr with w1 w1. t.
            ++ (* right component of WRS: IW loc M' *)
-              apply co_iw with w2 w1. exists w1; auto. split; auto.
-    + rewrite cap_cartes, cap_cartes_l.
+              apply co_iw with w2 w1. exists w1; auto. t.
+    + (** Inclusion 2 *)
+      rewrite cap_cartes, cap_cartes_l.
       subst S'.
       intros w1 r [w1r short].
       assert (r :: R). type.
       destruct (r_rf r r ltac:(split; auto)) as [w2 _ qw].
       type w2.
       destruct (classic (w1 = w2)). congruence.
-      destruct (co_total w1 w2) as [D|D].
-      { t. type. transitivity r. now destruct_rel. symmetry. now apply rf_loc. }
+      destruct (co_total' w1 w2) as [D|D].
+      { t. type. apply loc_trans with r. now destruct_rel.
+        apply loc_sym. now apply rf_loc. }
       * (* w1 -co-> w2 -rf-> r, which should contradict the "short" hypothesis *)
         destruct short. exists w2.
         -- (* w1 to w2 *)
@@ -511,11 +506,17 @@ Proof.
            now apply frS. assumption. reflexivity.
         -- (* in IW loc M', but w1 cannot be in IW since w2 -co->w1 *)
            eapply co_iw. exists w1. eauto. now split.
-  - intros (S & [(Sirr & St & Sdom & Stot) Sincl] & Spo & Srf & rfS).
+
+  - (** Now suppose we have an execution with a Lamport-style "S"
+    total relation, we build a sc.cat execution, and in particular the
+    co between writes, which is S restricted to pairs of writes on the
+    same variable, with some detail accounting to initial variables *)
+    intros (S & [(Sirr & St & Sdom & Stot) Sincl] & Spo & Srf & rfS).
     rewrite is_empty_included in Srf, rfS, Spo.
     pose proof antisym _ _ Srf rfS as S_rf. clear Srf rfS.
     rewrite cap_cartes in S_rf.
     rewrite cap_cartes_l in S_rf.
+    (** S doesn't touch any IW, so we add IW->W\IW and ^+ *)
     set (S_ := (S ⊔ [IW]⋅loc⋅[(R ⊔ W) ⊓ !IW])^+).
     (* set (S_ := ([IW]⋅loc⋅[(R ⊔ W) ⊓ !IW] ⊔ 1) ⋅ S). *)
     fold S_ in S_rf.
@@ -523,7 +524,7 @@ Proof.
     set (co := [W] ⋅ (S_ ⊓ loc) ⋅ [W]).  (* ⊔ co_init). *)
     exists co.
     repeat apply conj.
-    + (* generate_cos *)
+    + (** Properties of co *)
       apply generate_orders_spec.
       repeat apply conj.
       * unfold co. now kat.
@@ -538,43 +539,94 @@ Proof.
         apply transitive_dot_tst_r.
         apply transitive_cap.
         now apply transitive_itr.
-        apply @Equivalence_Transitive in loc_eq.
-        unfold Transitive in *.
-        intros x y [z ? ?]. eapply loc_eq; eauto.
+        intros x y [z ? ?]. eapply loc_trans; eauto.
       * subst co. rewrite leq_cap_r. kat.
       * assert (co1 : loc ⊓ ([IW]⋅top⋅[W ⊓ !IW] ⊔ [W ⊓ !FW]⋅top⋅[FW]) ≦ co).
-        admit.
+        { subst co S_.
+          rewrite <-Sincl, <-itr_ext.
+          rewrite <-(capI loc) at 1; rewrite <-capA.
+          rewrite capcup, !dotcap1_rel, !cap_cartes; try kat.
+          rewrite capC. apply cap_leq; auto.
+          Fail kat.
+         (* assert (iwfw : IW ⊓ FW ≦ bot) by admit. (* et non... *)
+          clear -iw_w fw_w iwfw.
+          hkat. *)
+          apply join_leq.
+          - clear -iw_w fw_w.
+            hkat.
+          - clear -iw_w fw_w rw_disj.
+            transitivity ([W ⊓ !FW]⋅loc⋅[FW]⋅([IW] ⊔ [!IW])).
+            now kat.
+            ra_normalise.
+            apply join_leq.
+            now hkat.
+            assert (E : [W]⋅loc⋅[FW]⋅[IW] ≦ [FW]⋅[IW]⋅loc⋅[FW]⋅[IW])
+              by admit (* @luc ? *).
+            rewrite capC, inj_cap.
+            mrewrite E.
+            kat.
+        }
         assert (co2 : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°) by admit.
         intros w1 w2 w1w2 Ww1 Ww2; split. apply co1.
         intros d; apply co2.
         t.
-    + (* atomic. *)
+    + (** atomic. *)
+      unfold is_empty.
       admit.
-    + (* rewrite S_rf, Spo. *)
-      (*
-      assert (Sitr : S_ ≡ S_^+).
-      { apply antisym. ka. apply itr_ind_l1; auto. unfold S_.
-        ka. }
-        rewrite Sdom at 1 2.
-        destruct_rel.
-        - left. apply St; eexists; eauto.
-        - 
-          le S_ devrait être ([IW]loc)?;S ?
-      rewrite capcup'.
-      kat. *)
+    + (** Main acyclicity requirement, on po+com *)
       apply acyclic_leq with S_.
       * repeat apply join_leq.
-        -- unfold S_. rewrite <-Spo. ka.
-        -- (* if we forget about IW, either the fr is in S, or it is in S°
-              in which case the rf can be done in two steps: the co, then S
-              which is impossible since rf is the shortest *)
-           transitivity (rf° ⋅ co). lattice.
-           intros r w2 [w1 rw1 w1w2]. destruct_rel.
-           admit (* contains fr *).
-        -- subst S_.
+        -- (** po *) unfold S_. rewrite <-Spo. ka.
+        -- (** fr *)
+           intros r w2 ([w1 rw1 w1w2] & rw2). destruct_rel.
+           (** We use the totality of S *)
+           destruct (Stot r w2) as [T|T].
+           { (* Checking it's the right domain *)
+             t.
+             - rewrite S_rf in rw1.
+               destruct_rel.
+               assert (([!IW]⋅S⋅[!IW]) w1 r) by now apply Sdom.
+               + type.
+               + type.
+             - subst co S_.
+               destruct_rel.
+               eapply ranging_itr; eauto.
+               apply ranging_cup.
+               + intros x y xy. apply Sdom in xy. type.
+               + intros x y xy. destruct_rel. type.
+           }
+           ++ (** first case: S r w2. Then, S_ r w2 *)
+              assert (a : forall S : relation events, S ≦ S^+) by (intro;ka). apply a.
+              left; auto.
+           ++ (** first case: S w2 r. Then rf w1 r can be shortcut
+                through w2, contradiction. *)
+              exfalso.
+              change (S w2 r) in T.
+              rewrite S_rf in rw1. destruct rw1 as [rw1 rw1']. apply rw1'.
+              exists w2.
+              ** (** First part of the path: co w1 w2 *)
+                 destruct (proj2_sig (IW w1)) as [w1i | w1ni].
+                 (* w1 initial *)
+                 { subst co. right. t. now destruct_rel. type. right; type. }
+                 (* w1 not initial *)
+                 assert (a: ([!IW] ⋅ co) w1 w2) by t.
+                 left. cut ([!IW]⋅co ≦ S). intros H; now apply H.
+                 subst co S_.
+                 assert (S^+ ≡ S) as <- by now apply itr_transitive.
+                 rewrite Sdom at 1.
+                 rewrite leq_cap_l.
+                 kat.
+              ** (** Second part: we know S w2 r *)
+                 subst co.
+                 t.
+                 now left.
+                 now apply loc_trans with w1; destruct_rel; auto; symmetry.
+        -- (** rf*) subst S_.
            rewrite S_rf, 2leq_cap_l, <-itr_ext. kat.
-        -- unfold co. rewrite leq_cap_l. kat.
-      * unfold S_. rewrite acyclic_itr.
+        -- (** co *)
+           unfold co. rewrite leq_cap_l. kat.
+      * (** S_ is indeed acyclic *)
+        unfold S_. rewrite acyclic_itr.
         apply acyclic_cup. repeat apply conj.
         -- apply transitive_irreflexive_acyclic; auto.
         -- apply acyclic_incompatible_domain_range. now firstorder.

@@ -77,7 +77,7 @@ Record candidate :=
   {
     (* Documentation for names:
        http://diy.inria.fr/doc/herd.html#language:identifier *)
-    events : Set;
+    events : Type;
     W   : set events; (* read events *)
     R   : set events; (* write events *)
     IW  : set events; (* initial writes *)
@@ -107,27 +107,27 @@ Record candidate :=
     finite_events : finite events;
     rf_wr : rf ≦ [W] ⋅ rf ⋅ [R];
     po_iw : po ≦ [!IW] ⋅ po ⋅ [!IW];
-    rw_disj : R ⊓ W ≦ bot;
     iw_w : IW ≦ W;
+    iw_uniq : [IW] ⋅ loc ⋅ [IW] ≦ 1;
     fw_w : FW ≦ W;
     rf_loc : rf ≦ loc;
     r_rf : [R] ≦ top ⋅ rf;
     rf_uniq : rf ⋅ rf° ≦ 1;
-    loc_eq : Equivalence loc;
+    loc_sym : Symmetric loc;
+    loc_trans : Transitive loc;
   }.
 
 Hint Unfold events W R IW FW B RMW F
      po addr data ctrl rmw amo rf loc ext int
      unknown_set unknown_relation
      finite_events
-     rf_wr
+     rf_wr (* TODO can we remove those hints *)
      po_iw
-     rw_disj
      iw_w
+     iw_uniq
      rf_loc
      r_rf
      rf_uniq
-     loc_eq
   : cat_record.
 
 Hint Unfold union intersection diff incl rel_seq rel_inv : cat_defs.

@@ -12,12 +12,12 @@ Proof.
   intros R S H. split; apply is_empty_leq; compute in *; apply H.
 Qed.
 
-Lemma irreflexive_leq A (R S : relation A): R ≦ S -> irreflexive S -> irreflexive R.
+Lemma irreflexive_leq A (R S : relation A) : R ≦ S -> irreflexive S -> irreflexive R.
 Proof.
   intros H. unfold irreflexive. compute in *; firstorder.
 Qed.
 
-Lemma irreflexive_weq A (R S : relation A): R ≡ S -> irreflexive S <-> irreflexive R.
+Lemma irreflexive_weq A (R S : relation A) : R ≡ S -> irreflexive S <-> irreflexive R.
 Proof.
   intros H; split; apply irreflexive_leq; rewrite H; auto.
 Qed.
@@ -67,6 +67,7 @@ Ltac destruct_rel :=
     | H : (_ ⋅ [_]) _ _ |- _ => destruct H as [? ? [-> ?]]
     | H : (_ ⋅ 1) _ _ |- _ => destruct H as [? ? ->]
     | H : (_ ⋅ _) _ _ |- _ => destruct H
+    | H : [_] ?x ?x |- _ => destruct H as [_ H]
     | H : [_] _ _ |- _ => destruct H as [->]
     | H : 1 _ _ |- _ => destruct H
     end.
@@ -280,3 +281,31 @@ Proof.
   rewrite SS. ra_normalise.
   intros x x_ [xx <-]. apply SS. exists x; auto.
 Qed.
+
+Tactic Notation "spec" hyp(H) :=
+  match type of H with
+    forall _ : ?a, _ =>
+    let Ha := fresh in
+    assert (Ha : a); [ | specialize (H Ha); clear Ha ]
+  end.
+
+Tactic Notation "spec" hyp(H) constr(t1) := specialize (H t1).
+Tactic Notation "spec" hyp(H) constr(t1) constr(t2) := specialize (H t1 t2).
+Tactic Notation "spec" hyp(H) constr(t1) constr(t2) constr(t3) := specialize (H t1 t2 t3).
+
+Tactic Notation "spec" hyp(H) "by" tactic(t) :=
+  spec H; [ now t | ].
+
+Tactic Notation "apply" "!" constr(t) := repeat apply t.
+
+Tactic Notation "elim_trans" constr(r) :=
+  let Heq := fresh "Heq" in
+  assert (Heq : r ≡ r^+) by (now symmetry; apply itr_transitive);
+  rewrite Heq in *;
+  clear Heq.
+
+Tactic Notation "elim_trans" :=
+  match goal with
+  | H : is_transitive ?r |- _ => elim_trans r; clear H
+  | H : ?r ⋅ ?r ≦ ?r |- _ => elim_trans r; clear H
+  end.
