@@ -33,3 +33,7 @@ nlia.cache
 nra.cache
 /_build/
 *opam
+/poubelle/
+*/#*#
+/Makefile
+/Makefile.conf

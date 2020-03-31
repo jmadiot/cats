@@ -68,12 +68,8 @@ models/uniproc.v
 models/uni.v
 models/x86fences.v
 models/x86tso.v
-zoo/aac_problems.v
-zoo/hkatproblem.v
 zoo/lamport.v
-zoo/sc_lamport.v
 zoo/sc_nosm.v
 zoo/tso_nosm.v
 zoo/x86tso.v
-zoo/zoo_rel_mixup.v
 zoo/zoo.v
