@@ -4,6 +4,8 @@ lib/aac_ra.v
 lib/acyclic.v
 lib/Cat.v
 lib/co.v
+lib/interp.v
+lib/proprel_classic.v
 lib/proprel.v
 misc/kat_vs_lattice.v
 misc/uniproc.v

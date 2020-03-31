@@ -163,18 +163,6 @@ Proof.
   - intros [ -> | H]. destruct x. tauto. now apply IHl.
 Qed.
 
-(*
-Fixpoint inls_of_list {A B} (l : list (A + B)) : list A :=
-  match l with
-  | nil => nil
-  | inl a :: xs => a :: inls_of_list xs
-  | inr _ :: xs => inls_of_list xs
-  end.
-
-Program Definition is_Some_is_None {A} (o : option A) : is_Some o + is_None o :=
-  match o with Some _ => inl _ | None => inr _ end.
-*)
-
 Lemma finite_events_ : finite events_.
 Proof.
   pose (maxlen := list_max (List.map (fun l => List.length l) threads)).
@@ -211,7 +199,7 @@ Variable readfrom_is_consistent :
     label_of e = Some (read x v) ->
     label_of (readfrom e) = Some (write x v).
 
-Variable writeisfinal : event -> bool.
+Variable write_is_final : event -> bool.
 
 Definition is_read (e : event) := exists x v, label_of e = Some (read x v).
 
@@ -219,7 +207,7 @@ Definition is_write (e : event) := exists x v, label_of e = Some (write x v).
 
 Definition is_initial_write (e : event) := is_write e /\ exists x, e = inr x.
 
-Definition is_final_write (e : event) := is_write e /\ writeisfinal e = true.
+Definition is_final_write (e : event) := is_write e /\ write_is_final e = true.
 
 Definition is_at (x : nat) (e : event) :=
   exists l, label_of e = Some l /\ loc_of_label l = x.
@@ -227,20 +215,18 @@ Definition is_at (x : nat) (e : event) :=
 Definition internal (e1 e2 : event) :=
   exists ith i1 i2, e1 = inl (ith, i1) /\ e2 = inl (ith, i2).
 
-Program Definition W_ : lattice.car (set event) := fun e => exist _ (is_write e) _.
-Next Obligation.
-  destruct e as [(i, j) | x Hx]; unfold is_write; simpl in *.
-  destruct (nth_error _ _).
-  destruct (nth_error _ _).
-  destruct (Some _) as [ [ | ] | ] eqn:e.
-  all: try destruct (in_dec _ _ _).
-  all: congruence || eauto.
-  all: try (right; intros (?&?&?); congruence).
+Definition finevent := { event | is_Some (label_of event) }.
+
+Lemma finevent_ext (e1 e2 : finevent) : proj1_sig e1 = proj1_sig e2 -> e1 = e2.
+Proof.
+  destruct e1 as (e1, H1), e2 as (e2, H2). simpl. intros <-. f_equal.
+  destruct (label_of e1); simpl in H1, H2.
+  destruct H1, H2. reflexivity. tauto.
 Qed.
 
-Program Definition R_ : lattice.car (set event) := fun e => exist _ (is_read e) _.
+Program Definition R_ : set finevent := fun e => exist _ (is_read e) _.
 Next Obligation.
-  destruct e as [(i, j) | x]; unfold is_read; simpl.
+  destruct e as [[(i, j) | x] He]; unfold is_read; simpl.
   destruct (nth_error _ _).
   destruct (nth_error _ _).
   destruct (Some _) as [ [ | ] | ] eqn:e.
@@ -249,23 +235,39 @@ Next Obligation.
   all: right; intros (?&?&?); congruence.
 Qed.
 
-Program Definition IW_ : lattice.car (set event) := fun e => exist _ (is_initial_write e) _.
+Program Definition W_ : set finevent := fun e => exist _ (is_write e) _.
 Next Obligation.
-  destruct e as [e | x].
-  { right. intros (x, (e', E)). congruence. }
+  destruct e as [[(i, j) | x] He]; unfold is_write; simpl in *.
+  destruct (nth_error _ _).
+  destruct (nth_error _ _).
+  destruct (Some _) as [ [ | ] | ] eqn:e.
+  all: try destruct (in_dec _ _ _).
+  all: congruence || eauto.
+  all: try (right; intros (?&?&?); congruence).
+Qed.
+
+Program Definition IW_ : set finevent := fun e => exist _ (is_initial_write e) _.
+Next Obligation.
+  destruct e as [[e | x] He].
+  { right. intros (x, (e', E)). simpl in *. congruence. }
   unfold is_initial_write, is_write; simpl.
   destruct (in_dec _). left; eauto. right; intros ((?&?&?), _). congruence.
 Qed.
 
-Program Definition FW_ : lattice.car (set event) := fun e => exist _ (is_final_write e) _.
+Program Definition FW_ : set finevent := fun e => exist _ (is_final_write e) _.
 Next Obligation.
-  destruct e as [e | x].
-Admitted.
+  destruct e as [e' He] eqn:Ee.
+  unfold is_final_write.
+  destruct (proj2_sig (W_ e)) as [w|w]; simpl in w. 2:tauto.
+  destruct (write_is_final e'). tauto. tauto.
+Qed.
 
-Definition rf_ : relation event :=
+Program Definition rf_ : relation finevent :=
   fun w r => is_write w /\ is_read r /\ readfrom r = w.
-Definition loc_ : relation event := fun e1 e2 => exists x, is_at x e1 /\ is_at x e2.
-Definition po_ : relation event := fun e1 e2 =>
+
+Program Definition loc_ : relation finevent := fun e1 e2 => exists x, is_at x e1 /\ is_at x e2.
+
+Program Definition po_ : relation finevent := fun e1 e2 =>
   match e1, e2 with
   | inl (t1, i1), inl (t2, i2) => t1 = t2 /\ i1 < i2
   | _, _ => False
@@ -279,9 +281,9 @@ Qed.
 
 Lemma po_iw_ : po_ ≦ [!IW_] ⋅ po_ ⋅ [!IW_].
 Proof.
-  intros [e1|x1] [e2|x2] Hpo.
-  - exists (inl e2).
-    + exists (inl e1); auto.
+  intros [[e1|x1] H1] [[e2|x2] H2] Hpo.
+  - exists (exist _ (inl e2) H2).
+    + exists (exist _ (inl e1) H1); auto.
       split; auto. intros (? & ? & ?); discriminate.
     + split; auto. intros (? & ? & ?); discriminate.
   - destruct e1. tauto.
@@ -298,8 +300,9 @@ Qed.
 
 Lemma iw_uniq_ : [IW_] ⋅ loc_ ⋅ [IW_] ≦ 1.
 Proof.
-  intros w1 w2 [w2_ [w1_ [<- [ww1 (x1, ->)]] [x [xw1 xw2]]] [<- [ww2 (x2, ->)]]].
-  enough (x1 = x2) as -> by reflexivity.
+  intros w1 w2 [w2_ [w1_ [<- [ww1 (x1, E1)]] [x [xw1 xw2]]] [-> [ww2 (x2, E2)]]].
+  enough (x1 = x2) by now subst; apply finevent_ext; congruence.
+  rewrite E1, E2 in *.
   unfold is_at in *; simpl in *.
   destruct (in_dec _ _ _), (in_dec _ _ _), xw1 as (?&xw1&?), xw2 as (?&xw2&?).
   all: try congruence.
@@ -316,23 +319,28 @@ Qed.
 
 Lemma rf_loc_ : rf_ ≦ loc_.
 Proof.
-  intros w r ((x & v & ww) & (x_ & v_ & rr) & <-).
+  intros w r ((x & v & ww) & (x_ & v_ & rr) & E).
   enough (x_ = x) as ->. exists x. split; eexists. now rewrite ww. now rewrite rr.
+  rewrite <-E in ww.
   erewrite readfrom_is_consistent in ww; eauto.
   congruence.
 Qed.
 
 Lemma r_rf_ : [R_] ≦ top ⋅ rf_.
 Proof.
-  intros r r_ [<- (x & v & Hr)]. exists (readfrom r). constructor.
+  intros r r_ [<- (x & v & Hr)].
+  assert (Hr' : is_Some (label_of (readfrom (proj1_sig r)))).
+  now rewrite (readfrom_is_consistent (proj1_sig r) _ _ Hr).
+  exists (exist _ (readfrom (proj1_sig r)) Hr'). constructor.
   repeat split. eexists _, _; apply readfrom_is_consistent; eauto.
   eexists _, _; apply Hr.
 Qed.
 
 Lemma rf_uniq_ : rf_ ⋅ rf_° ≦ 1.
 Proof.
-  intros w1 w2 [r (ww1 & rr & <-) (ww2 & rr' & <-)].
-  reflexivity.
+  intros w1 w2 [r (ww1 & rr & E1) (ww2 & rr' & E2)].
+  apply finevent_ext.
+  congruence.
 Qed.
 
 Lemma loc_sym_ : Symmetric loc_.
@@ -349,43 +357,42 @@ Proof.
   firstorder.
 Qed.
 
-Program Definition candidate_of_program : candidate :=
- {| events := { event | is_Some (label_of event) };
-    W := W_;
-    R := R_;
-    IW := IW_;
-    FW := FW_;
-    B := lattice.bot;
-    RMW := lattice.bot;
-    F := lattice.bot;
-    po := po_;
-    addr := lattice.bot;
-    data := lattice.bot;
-    ctrl := lattice.bot;
-    rmw := lattice.bot;
-    amo := lattice.bot;
-    rf := rf_;
-    loc := loc_;
-    int := fun e1 e2 => internal e1 e2;
-    ext := fun e1 e2 => ~internal e1 e2;
-    unknown_set := fun _ => lattice.bot;
-    unknown_relation := fun _ => lattice.bot;
- |}.
-Next Obligation.
-  apply finite_events_.
-Qed.
-Next Obligation.
-  Fail apply rf_wr_.
-Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
-Next Obligation. Admitted.
+Definition internal_ (e1 e2 : finevent) :=
+  exists ith i1 i2, proj1_sig e1 = inl (ith, i1) /\ proj1_sig e2 = inl (ith, i2).
+
+Definition candidate_of_program : candidate :=
+  {| events := { event | is_Some (label_of event) };
+     R := R_;
+     W := W_;
+     IW := IW_;
+     FW := FW_;
+     B := lattice.bot;
+     RMW := lattice.bot;
+     F := lattice.bot;
+     po := po_;
+     addr := lattice.bot;
+     data := lattice.bot;
+     ctrl := lattice.bot;
+     rmw := lattice.bot;
+     amo := lattice.bot;
+     rf := rf_;
+     loc := loc_;
+     int := fun e1 e2 => internal_ e1 e2;
+     ext := fun e1 e2 => ~internal_ e1 e2;
+     unknown_set := fun _ => lattice.bot;
+     unknown_relation := fun _ => lattice.bot;
+     finite_events := finite_events_;
+     rf_wr := rf_wr_;
+     po_iw := po_iw_;
+     iw_w := iw_w_;
+     iw_uniq := iw_uniq_;
+     fw_w := fw_w_;
+     rf_loc := rf_loc_;
+     r_rf := r_rf_;
+     rf_uniq := rf_uniq_;
+     loc_sym := loc_sym_;
+     loc_trans := loc_trans_;
+  |}.
 
 End Definition_of_candidat.
 
@@ -395,10 +402,10 @@ Definition candidates_of_program (p : program) : candidate -> Prop :=
       inputs
       readfrom
       readfrom_is_consistent
-      writeisfinal,
+      write_is_final,
       c = candidate_of_program
             p
             inputs
             readfrom
             readfrom_is_consistent
-            writeisfinal.
+            write_is_final.
