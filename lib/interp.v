@@ -1,6 +1,6 @@
 From Coq Require Import Arith List Streams.
 From RelationAlgebra Require Import lattice kat.
-From Catincoq.lib Require Import Cat proprel.
+From Catincoq.lib Require Import Cat proprel acyclic.
 
 Definition list_max l := fold_right max O l.
 
@@ -212,10 +212,19 @@ Definition is_final_write (e : event) := is_write e /\ write_is_final e = true.
 Definition is_at (x : nat) (e : event) :=
   exists l, label_of e = Some l /\ loc_of_label l = x.
 
-Definition internal (e1 e2 : event) :=
-  exists ith i1 i2, e1 = inl (ith, i1) /\ e2 = inl (ith, i2).
+Variable write_is_final_is_consistent :
+  forall e,
+    is_final_write e ->
+    is_initial_write e ->
+    forall x e', is_write e' -> is_at x e -> is_at x e' -> e' = e.
 
 Definition finevent := { event | is_Some (label_of event) }.
+
+Program Definition loc_ : relation finevent :=
+  fun e1 e2 => exists x, is_at x e1 /\ is_at x e2.
+
+Definition internal (e1 e2 : event) :=
+  exists ith i1 i2, e1 = inl (ith, i1) /\ e2 = inl (ith, i2).
 
 Lemma finevent_ext (e1 e2 : finevent) : proj1_sig e1 = proj1_sig e2 -> e1 = e2.
 Proof.
@@ -264,8 +273,6 @@ Qed.
 
 Program Definition rf_ : relation finevent :=
   fun w r => is_write w /\ is_read r /\ readfrom r = w.
-
-Program Definition loc_ : relation finevent := fun e1 e2 => exists x, is_at x e1 /\ is_at x e2.
 
 Program Definition po_ : relation finevent := fun e1 e2 =>
   match e1, e2 with
@@ -360,6 +367,24 @@ Qed.
 Definition internal_ (e1 e2 : finevent) :=
   exists ith i1 i2, proj1_sig e1 = inl (ith, i1) /\ proj1_sig e2 = inl (ith, i2).
 
+Lemma iw_fw_ : [IW_ ⊓ FW_] ⋅ loc_ ⋅ [W_] ≦ top ⋅ [IW_ ⊓ FW_].
+Proof.
+  intros w1 w2.
+  destruct_rel.
+  match goal with H : loc_ _ _ |- _ => destruct H end.
+  exists w2. constructor.
+  enough (w2 = w1) by now subst; eauto.
+  apply finevent_ext.
+  simpl in *.
+  eapply write_is_final_is_consistent; intuition eauto.
+Qed.
+
+Lemma r_iw_ : R_ ⊓ IW_ ≦ bot.
+Proof.
+  intros w1 w2.
+  destruct_rel.
+Admitted.
+
 Definition candidate_of_program : candidate :=
   {| events := { event | is_Some (label_of event) };
      R := R_;
@@ -385,7 +410,9 @@ Definition candidate_of_program : candidate :=
      rf_wr := rf_wr_;
      po_iw := po_iw_;
      iw_w := iw_w_;
+     iw_fw := iw_fw_;
      iw_uniq := iw_uniq_;
+     r_iw := r_iw_;
      fw_w := fw_w_;
      rf_loc := rf_loc_;
      r_rf := r_rf_;
@@ -402,10 +429,12 @@ Definition candidates_of_program (p : program) : candidate -> Prop :=
       inputs
       readfrom
       readfrom_is_consistent
-      write_is_final,
+      write_is_final
+      write_is_final_is_consistent,
       c = candidate_of_program
             p
             inputs
             readfrom
             readfrom_is_consistent
-            write_is_final.
+            write_is_final
+            write_is_final_is_consistent.

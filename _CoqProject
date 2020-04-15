@@ -5,6 +5,7 @@ lib/acyclic.v
 lib/Cat.v
 lib/co.v
 lib/interp.v
+lib/list.v
 lib/proprel_classic.v
 lib/proprel.v
 misc/kat_vs_lattice.v

@@ -109,7 +109,9 @@ Record candidate :=
     po_iw : po ≦ [!IW] ⋅ po ⋅ [!IW];
     iw_w : IW ≦ W;
     iw_uniq : [IW] ⋅ loc ⋅ [IW] ≦ 1;
+    r_iw : R ⊓ IW ≦ bot;
     fw_w : FW ≦ W;
+    iw_fw : [IW ⊓ FW] ⋅ loc ⋅ [W] ≦ top ⋅ [IW ⊓ FW];
     rf_loc : rf ≦ loc;
     r_rf : [R] ≦ top ⋅ rf;
     rf_uniq : rf ⋅ rf° ≦ 1;

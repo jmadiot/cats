@@ -9,10 +9,11 @@ From Catincoq.lib Require Import Cat proprel acyclic co.
 From Catincoq.lib Require aac_ra.
 
 Open Scope string_scope.
-From Catincoq.zoo (* NOT the one in models/, since we need MFENCE to be defined *) Require x86tso.
-From Catincoq.models Require rc11.
-(* From Catincoq_Models Require x86tso rc11. *)
+From Catincoq.models Require rc11 sc.
 From Catincoq.zoo Require sc_nosm tso_nosm lamport.
+
+(* Not the one in models/, since we need MFENCE to be defined: *)
+From Catincoq.zoo Require x86tso.
 
 Lemma dotcap1l (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
   forall (n : ob X) (x y z : X n n),
@@ -245,7 +246,7 @@ Proof.
   lattice.
 Qed.
 
-Tactic Notation "type" :=
+Ltac type_ :=
   repeat
     match goal with
     | Hx : ?x :: ?X |- ?x :: ?X => assumption
@@ -262,7 +263,13 @@ Tactic Notation "type" :=
       assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
       destruct_rel; assumption
     | |- _ :: _ ⊓ _ => split
+    | |- _ :: !_ => try solve [intro; type_]
+    | H : ?X ≦ ?Y, H' : ?x :: ?X |- ?x :: ?Y => apply H, H'
+    | H : ?X ≦ ?Y |- ?x :: ?Y => try solve [apply H; type_]
+    | |- _ :: top => constructor
     end.
+
+Tactic Notation "type" := type_.
 
 Tactic Notation "type" var(v) :=
   match goal with
@@ -276,11 +283,15 @@ Ltac t :=
   repeat
     (match goal with
      | |- (_ ⋅ [_]) ?x ?y => exists y; [ | split; auto ]
+     | |- ([_] ⋅ [_] ⋅ _) ?x ?y => exists x
+     | |- ([_] ⋅ [_] ⋅ [_] ⋅ _) ?x ?y => exists x
      | |- ([_] ⋅ _) ?x ?y => exists x; [ split; auto | ]
      | |- (_ ⊓ _) ?x ?y => split; auto
      | |- [_] ?x ?y => split; [ reflexivity | ]
      | |- 1 ?x ?y => reflexivity
      | |- top ?x ?y => constructor
+     | |- ?R° ?x ?y => change (R y x)
+     | |- _ => idtac
      end; type; try assumption).
 
 Lemma ranging_spec {A} (R : relation A) (X : set A) :
@@ -331,21 +342,34 @@ Proof.
   split. intros ->. ra. intros r x y xy. spec r x y xy. t; type.
 Qed.
 
-Lemma sc_nosm_lamport c : sc_nosm.valid c <-> lamport.valid c.
+Lemma itr_ext' {X} (R : relation X) x y : R x y -> R^+ x y.
 Proof.
-  unfold sc_nosm.valid, lamport.valid.
+  revert x y.
+  change (R ≦ R^+).
+  ka.
+Qed.
+
+From Catincoq.models Require sc.
+
+Lemma sc_lamport c
+      (no_atomic : rmw c ≡ bot)
+      (no_mixed_size : unknown_relation c "sm" ≡ 1) :
+  sc.valid c <-> lamport.valid c.
+Proof.
+  unfold sc.valid, lamport.valid.
   destrunfold.
-  assert (rw_disj : R ⊓ W ≦ bot) by admit.
+  assert (loc_sym' : loc° ≡ loc) by now split; destruct_rel; firstorder.
   split.
 
   - (** Suppose we have a "sc.cat" execution, with a generated co *)
     intros (co & Hco & atomic & sc).
+    rewrite no_mixed_size, dotx1 in sc. clear no_mixed_size no_atomic.
     apply generate_orders_spec_2 in Hco.
-    destruct Hco as (iwfw & co_order (* TODO USELESS? *) & co_total).
+    destruct Hco as (co_iwfw & co_order (* TODO USELESS? *) & co_total).
     assert (co_loc : co ≦ loc).
     { transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. kat. }
     assert (co_final : [W ⊓ !FW]⋅loc⋅[FW] ≦ co).
-    { rewrite <-iwfw. rewrite capcup, 2cap_cartes. kat. }
+    { rewrite <-co_iwfw. rewrite capcup, 2cap_cartes. kat. }
     assert (co_total' : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°).
     { rewrite capC, dotcap1_rel, co_total; try kat.
       destruct_rel. now left. now right. firstorder. }
@@ -362,7 +386,7 @@ Proof.
       - (* w1 is not initial: then, cycle in co *)
         exfalso.
         assert (co w2 w1).
-        { apply iwfw. split. now apply loc_sym, co_loc. left. t. }
+        { apply co_iwfw. split. now apply loc_sym, co_loc. left. t. }
         assert (c : co w1 w1) by now apply co_order; exists w2; auto.
         exfalso.
         eapply co_order. t. eauto.
@@ -414,24 +438,27 @@ Proof.
       change (rf ≦ WRS ⊓ !(S''⋅WRS)).
       apply leq_xcap.
       * (* r <= WRS *)
-        unfold WRS, S'', S'. rewrite capC, capcup.
-        assert (rf ≦ (([IW] ⊔ [W ⊓ !IW]) ⋅ rf ⋅ [R])) as ->.
+        assert (rf ≦ loc ⊓ rf ⊓ rf) as -> by lattice.
+        assert (e: rf ≦ (([IW] ⊔ [W ⊓ !IW]) ⋅ rf ⋅ [R] ⋅ ([IW] ⊔ [R ⊓ !IW]))).
         { hkat_help. (* Fail hkat. *) clear -rf_wr0 rf_wr1. hkat. }
+        rewrite e at 2.
         ra_normalise.
-        apply cup_leq.
-        -- Fail hlattice. rewrite <-iw_w, rf_loc.
-           (* tactique pour pousser les [IW] au fond ? *)
-           rewrite dotcap1_rel; try kat.
-           apply leq_xcap; try kat. unfold M', M. rewrite iw_w at 3.
-           clear -rw_disj.
-           hkat.
-        -- rewrite dotcap1_rel; try kat.
-           apply leq_xcap. rewrite rf_loc. now kat.
-           assert (rf ≦ S) as <-. rewrite <-Sincl. unfold com. now kat.
-           hkat_help.
-           (* Fail hkat. *)
-           clear -rf_wr0 rf_wr1 rw_disj iw_w.
-           hkat.
+        subst WRS S'' S' M' M.
+        intros w r. destruct_rel.
+        -- t. right. t. left. type.
+        -- t. exfalso. assert (w = r) as <- by now apply iw_uniq; t.
+           apply (sc w w). t.
+           assert (rf ≦ (po ⊔ (fr ⊔ (rf ⊔ co)))^+) as a by ka.
+           now apply a.
+        -- t. left. t. apply Sincl. t.
+           unfold com.
+           assert (rf ≦ (po ⊔ (fr ⊔ (rf ⊔ co)))^+) as a by ka.
+           now apply a.
+        -- exfalso.
+           apply (sc w w). t.
+           assert (rf ⋅ co ≦ (po ⊔ (fr ⊔ (rf ⊔ co)))^+) as a by ka.
+           apply a.
+           exists r; auto. apply co_iwfw. t. left. t.
       * (* r <= !(S'' WRS) *)
         intros w1 r w1r [w2 w1w2 w2r].
         assert (w1 <> w2).
@@ -445,7 +472,13 @@ Proof.
           apply loc_sym. subst WRS. destruct_rel. firstorder. }
         destruct (co_total' w1 w2) as [D|D]. now t.
         -- assert (fr r w2).
-           { rewrite Heqfr. split. exists w1. apply w1r. apply D. intros ->. type. }
+           { rewrite Heqfr. split. exists w1. apply w1r. apply D. intros ->.
+             (* WRS is acyclic *) subst WRS S'' S'. destruct_rel.
+             now apply (Sirr w2 w2); t.
+             now type.
+             now apply (Sirr w2 w2); t.
+             now type.
+           }
            subst WRS S'' S'. clear w1w2.
            destruct_rel.
            ++ (* left component of WRS : S *)
@@ -487,7 +520,7 @@ Proof.
         -- (* w2 to r *)
            exists r. 2: now split; auto. exists w2. now split; auto.
            split. 2: now apply rf_loc.
-           assert (r :: !IW). intro riw. apply iw_w in riw. type.
+           assert (r :: !IW). now type.
            destruct (proj2_sig (IW w2)).
            ++ (* w2 is initial *)
               right. exists r. exists w2. now split; auto. now apply rf_loc.
@@ -500,7 +533,9 @@ Proof.
         exfalso.
         change (co w2 w1) in D.
         assert (fr r w1). { subst. split. now exists w2; auto.
-          unfold id. simpl. type r. type w1. intros ->. type. }
+          unfold id. simpl. type r. type w1. intros ->. Fail now type.
+          (* cycle in w1r *) destruct_rel. now apply (Sirr w1 w1); t.
+          type. }
         clear short. destruct_rel.
         -- (* in S *) apply Sirr with r r. split. apply St. exists w1.
            now apply frS. assumption. reflexivity.
@@ -523,6 +558,7 @@ Proof.
     (* set (co_init := loc ⊓ [IW]⋅top⋅[(R ⊔ W) ⊓ !IW]). *)
     set (co := [W] ⋅ (S_ ⊓ loc) ⋅ [W]).  (* ⊔ co_init). *)
     exists co.
+    rewrite no_mixed_size, dotx1. clear no_mixed_size.
     repeat apply conj.
     + (** Properties of co *)
       apply generate_orders_spec.
@@ -547,32 +583,46 @@ Proof.
           rewrite <-(capI loc) at 1; rewrite <-capA.
           rewrite capcup, !dotcap1_rel, !cap_cartes; try kat.
           rewrite capC. apply cap_leq; auto.
-          Fail kat.
-         (* assert (iwfw : IW ⊓ FW ≦ bot) by admit. (* et non... *)
-          clear -iw_w fw_w iwfw.
-          hkat. *)
           apply join_leq.
           - clear -iw_w fw_w.
             hkat.
-          - clear -iw_w fw_w rw_disj.
-            transitivity ([W ⊓ !FW]⋅loc⋅[FW]⋅([IW] ⊔ [!IW])).
-            now kat.
+          - clear -iw_w fw_w iw_fw loc_sym.
+            transitivity ([W ⊓ !FW]⋅loc⋅[FW]⋅([IW] ⊔ [!IW])). now kat.
             ra_normalise.
-            apply join_leq.
-            now hkat.
-            assert (E : [W]⋅loc⋅[FW]⋅[IW] ≦ [FW]⋅[IW]⋅loc⋅[FW]⋅[IW])
-              by admit (* @luc ? *).
+            apply join_leq. now hkat.
             rewrite capC, inj_cap.
-            mrewrite E.
-            kat.
+            enough (E : [W]⋅loc⋅[FW]⋅[IW] ≦ [FW]⋅[IW]⋅top). now mrewrite E; kat.
+            apply cnv_leq_iff. ra_simpl. rewrite !cnvtst.
+            rewrite inj_cap, dotA in iw_fw. rewrite <-iw_fw.
+            destruct_rel. t. firstorder.
         }
-        assert (co2 : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°) by admit.
+        assert (co2 : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°). {
+          subst S_ co.
+          transitivity (([IW] ⊔ [W ⊓ !IW]) ⋅ (!1 ⊓ loc) ⋅ ([IW] ⊔ [W ⊓ !IW])).
+          now kat.
+          ra_normalise.
+          elim_cnv.
+          rewrite loc_sym'.
+          repeat apply join_leq.
+          - rewrite dotcap1_rel; try kat.
+            assert ([W ⊓ !IW]⋅!1⋅[W ⊓ !IW] ≡ [W]⋅([!IW]⋅!1⋅[!IW])⋅[W]) as -> by kat.
+            rewrite Stot.
+            destruct_rel.
+            + left. t. apply itr_ext'. left. t.
+            + right. t. apply itr_ext'. left. t.
+          - rewrite <-leq_cup_r, <-leq_cup_r, <-itr_ext.
+            destruct_rel. t. right; type.
+          - rewrite <-leq_cup_l, <-leq_cup_r, <-itr_ext.
+            destruct_rel. t. right; type.
+          - rewrite <-cap_cartes, <-capA, cap_cartes, iw_uniq, capC, capneg.
+            ra.
+        }
         intros w1 w2 w1w2 Ww1 Ww2; split. apply co1.
         intros d; apply co2.
         t.
     + (** atomic. *)
       unfold is_empty.
-      admit.
+      rewrite no_atomic; ra.
     + (** Main acyclicity requirement, on po+com *)
       apply acyclic_leq with S_.
       * repeat apply join_leq.
@@ -633,8 +683,9 @@ Proof.
         -- apply empty_acyclic. unfold is_empty.
            rewrite itr_str_r.
            rewrite itr_str_l.
+           clear no_atomic.
            hkat.
-Admitted.
+Qed.
 
 Lemma sc_nosm_stronger_than_x86tso c : is_transitive (po c) -> sc_nosm.valid c -> x86tso.valid c.
 Proof.
@@ -669,6 +720,7 @@ Abort. (*
     ka.
 Qed.
 *)
+
 Lemma sc_nosm_stronger_than_tso_nosm c : is_transitive (po c) -> sc_nosm.valid c -> tso_nosm.valid c.
 Proof.
   intros Hpo.
