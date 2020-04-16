@@ -1,6 +1,6 @@
 From Coq Require Import Arith List Streams.
 From RelationAlgebra Require Import lattice kat.
-From Catincoq.lib Require Import Cat proprel acyclic.
+From Catincoq.lib Require Import Cat proprel tactics.
 
 Definition list_max l := fold_right max O l.
 
