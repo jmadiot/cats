@@ -147,9 +147,19 @@ Qed.
 
 Definition is_irreflexive {X} (R : relation X) := R ⊓ 1 ≦ 0.
 
-Lemma is_irreflexive_spec {X} (R : relation X) : irreflexive R <-> is_irreflexive R.
+Lemma is_irreflexive_spec1 {X} (R : relation X) : irreflexive R <-> is_irreflexive R.
 Proof.
   reflexivity.
+Qed.
+
+Lemma is_irreflexive_spec2 {X} (R : relation X) : relalg.is_irreflexive R <-> is_irreflexive R.
+Proof.
+  compute. firstorder (subst; firstorder).
+Qed.
+
+Lemma is_irreflexive_spec3 {X} (R : relation X) : RelationClasses.Irreflexive R <-> is_irreflexive R.
+Proof.
+  compute. firstorder (subst; firstorder).
 Qed.
 
 Definition is_acyclic {X} (R : relation X) := R^+ ⊓ 1 ≦ 0.

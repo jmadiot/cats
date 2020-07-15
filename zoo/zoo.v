@@ -109,7 +109,12 @@ Definition in_before {A} (l : list A) : A -> A -> Prop :=
 choice (or the weaker axiom "boolean ideal prime theorem")
 https://proofwiki.org/wiki/Order-Extension_Principle *)
 
-Lemma every_strict_order_can_be_total_on {A} (E : dpset A) (R : relation A) :
+Lemma cnvtst {A} {E : dpset A} : [E]° ≡ [E].
+Proof.
+  intros a b; split; intros [-> Ha]; constructor; auto.
+Qed.
+
+Lemma every_strict_order_can_be_total_on_aux {A} (E : dpset A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
   finite E ->
@@ -134,6 +139,28 @@ Proof.
   - intros x y. destruct_rel. destruct (Tot x y) as [xy | [<- | xy]].
     firstorder. firstorder. left; auto. firstorder. right; auto.
   - intros x y. destruct_rel. apply I. firstorder.
+Qed.
+
+Lemma every_strict_order_can_be_total_on {A} (E : dpset A) (R : relation A) :
+  (forall x y : A, R x y \/ ~R x y) ->
+  (forall x y : A, x = y \/ x <> y) ->
+  finite E ->
+  strict_order R ->
+  exists S,
+    strict_order S /\
+    S ≦ [E] ⋅ top ⋅ [E] /\
+    total_on E S /\
+    [E] ⋅ R ⋅ [E] ≦ S.
+Proof.
+  intros r e f o. destruct (every_strict_order_can_be_total_on_aux _ _ r e f o) as (S & (T&I) & t & RS).
+  exists ([E] ⋅ S ⋅ [E]); repeat split.
+  - rewrite <-T at 3. kat.
+  - rewrite <-I, leq_tst_1. ra.
+  - ra.
+  - unfold total_on in *.
+    assert ([E]⋅!1⋅[E] ≡ [E]⋅([E]⋅!1⋅[E])⋅[E]) as -> by kat.
+    rewrite t. elim_cnv. kat.
+  - rewrite <-RS. kat.
 Qed.
 
 Lemma every_order_can_be_total_on {A} (E : dpset A) (R : relation A) :
@@ -164,23 +191,13 @@ Proof.
   spec T by auto.
   spec T by auto.
   spec T by apply strict_order_of_partial_order.
-  destruct T as (S & So & St & RS).
+  destruct T as (S & So & SE & St & RS).
   exists (S ⊔ 1). split; [ | split ].
   - apply partial_order_of_strict_order, So.
   - unfold total_on in *. rewrite St. ra.
   - rewrite <-RS. destruct_rel. destruct (eqdec x y). right; auto. left.
     exists y. exists x; firstorder. firstorder.
 Qed.
-
-Lemma cnvtst {A} {E : dpset A} : [E]° ≡ [E].
-Proof.
-  intros a b; split; intros [-> Ha]; constructor; auto.
-Qed.
-
-Ltac elim_cnv :=
-  repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
-          ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg).
-(* Hint Rewrite would leave a bunch of subgoals about typeclasses *)
 
 (** Cat idiom for inclusion *)
 Lemma is_empty_included {A} (R S : relation A) : is_empty (R ⊓ !S) <-> R ≦ S.
@@ -357,24 +374,41 @@ Lemma sc_lamport c
   sc.valid c <-> lamport.valid c.
 Proof.
   unfold sc.valid, lamport.valid.
+  (* maybe once the problem of location is solved, those will not
+  depend on the candidate so we won't need those 'pose proof's *)
+  pose proof @generate_orders_spec_3 c as GOS.
+  pose proof @generate_orders_total c as GOT.
+  pose proof @generate_orders_total' c as GOT'.
+  pose proof @generate_orders_order c as GOO.
+  pose proof @location_of_spec c as LOS.
   destrunfold.
-  assert (loc_sym' : loc° ≡ loc) by now split; destruct_rel; firstorder.
+  assert (loc_sym' : loc° ≡ loc).
+  { clear GOS GOT GOT' GOO LOS; split; destruct_rel; firstorder. }
   split.
 
   - (** Suppose we have a "sc.cat" execution, with a generated co *)
     intros (co & Hco & atomic & sc).
     rewrite no_mixed_size, dotx1 in sc. clear no_mixed_size no_atomic.
-    apply generate_orders_spec_2 in Hco.
-    destruct Hco as (co_iwfw & co_order (* TODO USELESS? *) & co_total).
-    assert (co_loc : co ≦ loc).
-    { transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. kat. }
+    replace @Cat.cross with @cross in Hco by admit.
+    replace @Cat.co_locs with @co_locs in Hco by admit.
+    replace (fun Si : Ensemble events =>
+              (forall x : events, Si x -> ` W x) /\ (forall x y : events, Si x -> Si y -> loc x y))
+      with (partition loc `W) in Hco by admit.
+    pose proof Hco as co_total%GOT.
+    pose proof Hco as co_total'%GOT'.
+    pose proof Hco as co_order%GOO.
+    apply GOS in Hco.
+    destruct Hco as (co_iwfw & co_loc & co_lin).
+    (* assert (co_loc : co ≦ loc). *)
+    (* { transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. kat. } *)
     assert (co_final : [W ⊓ !FW]⋅loc⋅[FW] ≦ co).
-    { rewrite <-co_iwfw. rewrite capcup, 2cap_cartes. kat. }
-    assert (co_total' : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°).
-    { rewrite capC, dotcap1_rel, co_total; try kat.
-      destruct_rel. now left. now right. firstorder. }
+    { rewrite <-co_iwfw. rewrite capcup, 2 cap_cartes. Fail kat. admit. }
+    (* assert (co_total' : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°). *)
+    (* { rewrite capC, dotcap1_rel, co_total; try kat. *)
+    (*   destruct_rel. now left. now right. clear GOS. firstorder. } *)
     assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]).
-    { apply domrng_char. transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. ra. }
+    { apply domrng_char. transitivity ([W]⋅loc⋅[W]). 2:ra.
+      transitivity (co ⊔ co°). ra. rewrite <-co_total'. ra. }
     assert (co_iw : co ⋅ [IW] ≦ 0).
     { intros w1 w2.
       assert (([IW] ⊔ [!IW]) w1 w1).
@@ -382,11 +416,13 @@ Proof.
       destruct_rel.
       - (* w1 and w2 related through IW;co;IW? no contradiction? *)
         assert (w1 = w2) as <-. apply iw_uniq. t. now apply co_loc.
-        apply co_order. t.
+        assert ((co ⊔ co°) w1 w1) as f%co_total'%tst_dot_tst by (left; auto).
+        now apply f.
       - (* w1 is not initial: then, cycle in co *)
         exfalso.
         assert (co w2 w1).
-        { apply co_iwfw. split. now apply loc_sym, co_loc. left. t. }
+        { apply co_iwfw. split. t. now apply loc_sym, co_loc. left. t. t.
+          now apply loc_sym, co_loc. }
         assert (c : co w1 w1) by now apply co_order; exists w2; auto.
         exfalso.
         eapply co_order. t. eauto.
@@ -397,7 +433,7 @@ Proof.
     set (M' := M ⊓ !IW).
     (** We know po+com is acyclic, so we can extend it a total order *)
     destruct (every_strict_order_can_be_total_on top (po ⊔ com)^+)
-      as (S & (St & Sirr) & Stot & Sincl).
+      as (S & (St & Sirr) & lame & Stot & Sincl).
     { intros; apply classic. }
     { intros; apply classic. }
     { destruct fin as [l]. exists l. intuition. }
@@ -440,7 +476,8 @@ Proof.
       * (* r <= WRS *)
         assert (rf ≦ loc ⊓ rf ⊓ rf) as -> by lattice.
         assert (e: rf ≦ (([IW] ⊔ [W ⊓ !IW]) ⋅ rf ⋅ [R] ⋅ ([IW] ⊔ [R ⊓ !IW]))).
-        { hkat_help. (* Fail hkat. *) clear -rf_wr0 rf_wr1. hkat. }
+        { clear GOS GOT GOO GOT' co_lin LOS.
+          hkat_help. (* Fail hkat. *) clear -rf_wr0 rf_wr1. hkat. }
         rewrite e at 2.
         ra_normalise.
         subst WRS S'' S' M' M.
@@ -458,7 +495,7 @@ Proof.
            apply (sc w w). t.
            assert (rf ⋅ co ≦ (po ⊔ (fr ⊔ (rf ⊔ co)))^+) as a by ka.
            apply a.
-           exists r; auto. apply co_iwfw. t. left. t.
+           exists r; auto. apply co_iwfw. t. left. t. now apply loc_sym.
       * (* r <= !(S'' WRS) *)
         intros w1 r w1r [w2 w1w2 w2r].
         assert (w1 <> w2).
@@ -469,7 +506,8 @@ Proof.
         type w1.
         assert (w2 :: W) by (unfold WRS in *; type).
         assert (loc w1 w2). { apply loc_trans with r. now apply rf_loc.
-          apply loc_sym. subst WRS. destruct_rel. firstorder. }
+          apply loc_sym. subst WRS. destruct_rel. apply loc_sym. auto. }
+        apply weq_spec, proj1 in co_total'.
         destruct (co_total' w1 w2) as [D|D]. now t.
         -- assert (fr r w2).
            { rewrite Heqfr. split. exists w1. apply w1r. apply D. intros ->.
@@ -503,6 +541,7 @@ Proof.
       destruct (r_rf r r ltac:(split; auto)) as [w2 _ qw].
       type w2.
       destruct (classic (w1 = w2)). congruence.
+      apply weq_spec, proj1 in co_total'.
       destruct (co_total' w1 w2) as [D|D].
       { t. type. apply loc_trans with r. now destruct_rel.
         apply loc_sym. now apply rf_loc. }
@@ -513,10 +552,12 @@ Proof.
            ++ (* w1 is initial *)
               right. exists w2. exists w1. now split; auto. now apply co_loc.
               split; auto. split. unfold M. right; auto.
-              intro. apply co_iw with w1 w2. firstorder.
+              intro. apply co_iw with w1 w2.
+              rewrite dot_tst. split. auto. t.
            ++ (* w1 is not initial *)
               left. exists w2. exists w1. now split; auto. now apply coS.
-              split; auto. intro. apply co_iw with w1 w2. firstorder.
+              split; auto. intro. apply co_iw with w1 w2.
+              rewrite dot_tst. split. auto. t.
         -- (* w2 to r *)
            exists r. 2: now split; auto. exists w2. now split; auto.
            split. 2: now apply rf_loc.
@@ -561,23 +602,36 @@ Proof.
     rewrite no_mixed_size, dotx1. clear no_mixed_size.
     repeat apply conj.
     + (** Properties of co *)
-      apply generate_orders_spec.
-      repeat apply conj.
-      * unfold co. now kat.
-      * unfold co, S_.
+      (* TODO : those are properties of co needed in the older
+      characterization of generate_orders, so we keep them here in
+      order to help proving the new characterization *)
+      assert (co_ww : co ≦ [W]⋅co⋅[W]). {
+        unfold co. now kat.
+      }
+      assert (co_irr : co ⊓ 1 ≦ zer events events). {
+        unfold co, S_.
         destruct_rel.
         cut (acyclic (S ⊔ [IW]⋅loc⋅[(R ⊔ W) ⊓ !IW])). now intros a; apply a.
         apply acyclic_cup_excl2_l.
         -- now rewrite Sdom; kat.
         -- now kat.
         -- now apply transitive_irreflexive_acyclic; auto.
-      * apply transitive_dot_tst_l.
+      }
+      assert (co_trans : co⋅co ≦ co). {
+        apply transitive_dot_tst_l.
         apply transitive_dot_tst_r.
         apply transitive_cap.
         now apply transitive_itr.
         intros x y [z ? ?]. eapply loc_trans; eauto.
-      * subst co. rewrite leq_cap_r. kat.
-      * assert (co1 : loc ⊓ ([IW]⋅top⋅[W ⊓ !IW] ⊔ [W ⊓ !FW]⋅top⋅[FW]) ≦ co).
+      }
+      assert (co_loc : co ≦ loc). {
+        subst co. rewrite leq_cap_r. kat.
+      }
+      assert (co_TODO_find_name :
+      forall x y : events, loc x y -> x :: W -> y :: W ->
+    ((loc ⊓ ([IW]⋅top⋅[W ⊓ !IW] ⊔ [W ⊓ !FW]⋅top⋅[FW])) x y -> co x y) /\
+    (x <> y -> co x y \/ co y x)). {
+        assert (co1 : loc ⊓ ([IW]⋅top⋅[W ⊓ !IW] ⊔ [W ⊓ !FW]⋅top⋅[FW]) ≦ co).
         { subst co S_.
           rewrite <-Sincl, <-itr_ext.
           rewrite <-(capI loc) at 1; rewrite <-capA.
@@ -620,6 +674,34 @@ Proof.
         intros w1 w2 w1w2 Ww1 Ww2; split. apply co1.
         intros d; apply co2.
         t.
+      }
+      replace @Cat.cross with @cross by admit.
+      replace @Cat.co_locs with @co_locs by admit.
+      replace (fun Si : Ensemble events =>
+                 (forall x : events, Si x -> ` W x)
+                 /\(forall x y : events, Si x -> Si y -> loc x y))
+        with (partition loc `W) by admit.
+      apply GOS.
+      clear GOS GOT GOT' GOO.
+      split. 2:split. 2:easy. 2:intros l; split; [ split | split ].
+      * intros x y xy. t.
+        apply co_TODO_find_name.
+        now apply xy.
+        now destruct_rel; t.
+        now destruct_rel; t.
+        now apply xy.
+      * apply is_irreflexive_spec2.
+        intros x y. destruct_rel. destruct (co_irr x x); t.
+      * intros x z [y xy yz]. t. apply co_trans. exists y; destruct_rel; auto.
+      * intros x y. destruct_rel. t.
+      * intros x y. destruct_rel. t.
+        (* assert (location_of x = location_of y). *)
+        (* assert (loc x y) by now apply LOS; congruence. *)
+        specialize (co_TODO_find_name x y).
+        destruct co_TODO_find_name as [_ [tot|tot]]; try t.
+        now apply LOS; congruence.
+        now left; t.
+        now right; t.
     + (** atomic. *)
       unfold is_empty.
       rewrite no_atomic; ra.
@@ -685,7 +767,7 @@ Proof.
            rewrite itr_str_l.
            clear no_atomic.
            hkat.
-Qed.
+Admitted (* need to replace the definitions in Cat.v before *).
 
 Lemma sc_nosm_stronger_than_x86tso c : is_transitive (po c) -> sc_nosm.valid c -> x86tso.valid c.
 Proof.
@@ -848,7 +930,10 @@ Proof.
       assert (rf ⋅ [!R] ≦ 0) by (rewrite rf_wr; kat).
       hkat.
     + set (frd :=  rf°⋅co ⊓ !id).
+      (*
       assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]) by eapply generate_orders_bounds, Hco.
+      *)
+      assert (co_ww : co ≦ [W] ⋅ co ⋅ [W]) by admit.
       assert (frd_rw : frd ≦ [R] ⋅ frd ⋅ [W]). {
         unfold frd. rewrite co_ww, rf_wr at 1.
         clear.
@@ -874,7 +959,7 @@ Proof.
       }
       rewrite rfe_wr, co_ww, frd_rw at 1.
       kat.
-Qed.
+Abort (* just the co <= W co W problem *).
 
 Lemma sc_nosm_stronger_than_rc11 c :
   is_transitive (po c) ->

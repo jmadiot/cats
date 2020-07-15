@@ -350,6 +350,15 @@ Proof.
   congruence.
 Qed.
 
+Lemma loc_refl_ : Reflexive loc_.
+Proof.
+  intros [x i].
+  unfold loc_, is_at.
+  simpl.
+  destruct (label_of x). 2: inversion i.
+  eexists; split; eauto.
+Qed.
+
 Lemma loc_sym_ : Symmetric loc_.
 Proof.
   firstorder.
@@ -417,6 +426,7 @@ Definition candidate_of_program : candidate :=
      rf_loc := rf_loc_;
      r_rf := r_rf_;
      rf_uniq := rf_uniq_;
+     loc_refl := loc_refl_;
      loc_sym := loc_sym_;
      loc_trans := loc_trans_;
   |}.

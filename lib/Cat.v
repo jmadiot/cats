@@ -56,10 +56,10 @@ Definition linearisations_for_co_locs {A} (X : Ensemble A) (R : relation A) : En
 
 Definition set_flatten {A} : Ensemble (Ensemble A) -> Ensemble A := fun xss x => exists xs, xss xs /\ xs x.
 
-Definition map {A B} (f : A -> B) (X : Ensemble A) : Ensemble B := fun y => exists x, X x /\ y = f x.
+Definition subset_image {A B} (f : A -> B) (X : Ensemble A) : Ensemble B := fun y => exists x, X x /\ y = f x.
 
 Definition co_locs {A} (pco : relation A) (wss : Ensemble (Ensemble A)) : Ensemble (Ensemble (relation A)) :=
-  map (fun ws => linearisations_for_co_locs ws pco) wss.
+  subset_image (fun ws => linearisations_for_co_locs ws pco) wss.
 
 Definition cross {A} (Si : Ensemble (Ensemble (relation A))) : Ensemble (relation A) :=
   fun ei : relation A => exists (l : list (relation A)) (L : list (Ensemble (relation A))),
@@ -115,6 +115,7 @@ Record candidate :=
     rf_loc : rf ≦ loc;
     r_rf : [R] ≦ top ⋅ rf;
     rf_uniq : rf ⋅ rf° ≦ 1;
+    loc_refl : Reflexive loc;
     loc_sym : Symmetric loc;
     loc_trans : Transitive loc;
   }.

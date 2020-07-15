@@ -10,8 +10,7 @@ lib/oneofeach.v
 lib/proprel_classic.v
 lib/proprel.v
 lib/tactics.v
-misc/kat_vs_lattice.v
-misc/uniproc.v
+lib/uniproc.v
 models/aarch64fences.v
 models/aarch64_obsolete.v
 models/aarch64.v
