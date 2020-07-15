@@ -233,43 +233,13 @@ Proof.
   destruct H1, H2. reflexivity. tauto.
 Qed.
 
-Program Definition R_ : set finevent := fun e => exist _ (is_read e) _.
-Next Obligation.
-  destruct e as [[(i, j) | x] He]; unfold is_read; simpl.
-  destruct (nth_error _ _).
-  destruct (nth_error _ _).
-  destruct (Some _) as [ [ | ] | ] eqn:e.
-  all: try destruct (in_dec _ _ _).
-  all: congruence || eauto.
-  all: right; intros (?&?&?); congruence.
-Qed.
+Program Definition R_ : set finevent := fun e => is_read e.
 
-Program Definition W_ : set finevent := fun e => exist _ (is_write e) _.
-Next Obligation.
-  destruct e as [[(i, j) | x] He]; unfold is_write; simpl in *.
-  destruct (nth_error _ _).
-  destruct (nth_error _ _).
-  destruct (Some _) as [ [ | ] | ] eqn:e.
-  all: try destruct (in_dec _ _ _).
-  all: congruence || eauto.
-  all: try (right; intros (?&?&?); congruence).
-Qed.
+Program Definition W_ : set finevent := fun e => is_write e.
 
-Program Definition IW_ : set finevent := fun e => exist _ (is_initial_write e) _.
-Next Obligation.
-  destruct e as [[e | x] He].
-  { right. intros (x, (e', E)). simpl in *. congruence. }
-  unfold is_initial_write, is_write; simpl.
-  destruct (in_dec _). left; eauto. right; intros ((?&?&?), _). congruence.
-Qed.
+Program Definition IW_ : set finevent := fun e => is_initial_write e.
 
-Program Definition FW_ : set finevent := fun e => exist _ (is_final_write e) _.
-Next Obligation.
-  destruct e as [e' He] eqn:Ee.
-  unfold is_final_write.
-  destruct (proj2_sig (W_ e)) as [w|w]; simpl in w. 2:tauto.
-  destruct (write_is_final e'). tauto. tauto.
-Qed.
+Program Definition FW_ : set finevent := fun e => is_final_write e.
 
 Program Definition rf_ : relation finevent :=
   fun w r => is_write w /\ is_read r /\ readfrom r = w.

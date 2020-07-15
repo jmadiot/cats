@@ -1,5 +1,5 @@
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat proprel tactics.
+From Catincoq.lib Require Import Cat setrel tactics.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.
@@ -52,26 +52,26 @@ Proof.
   intros R S H. split; apply acyclic_leq; compute in *; apply H.
 Qed.
 
-Lemma cap_cartes {X} (R : relation X) (a b : dpset X) : R ⊓ ([a] ⋅ top ⋅ [b]) ≡ [a] ⋅ R ⋅ [b].
+Lemma cap_cartes {X} (R : relation X) (a b : set X) : R ⊓ ([a] ⋅ top ⋅ [b]) ≡ [a] ⋅ R ⋅ [b].
 Proof.
   destruct_rel.
   exists y; hnf; auto. exists x; hnf; auto.
   split; auto. exists y; hnf; auto. exists x; split; auto.
 Qed.
 
-Lemma cap_cartes_l {X} (R : relation X) (a b : dpset X) : ([a] ⋅ top ⋅ [b]) ⊓ R ≡ [a] ⋅ R ⋅ [b].
+Lemma cap_cartes_l {X} (R : relation X) (a b : set X) : ([a] ⋅ top ⋅ [b]) ⊓ R ≡ [a] ⋅ R ⋅ [b].
 Proof.
   destruct_rel.
   exists y; hnf; auto. exists x; hnf; auto.
   split; auto. exists y; hnf; auto. exists x; split; auto.
 Qed.
 
-Lemma leq_tst_1 {X} (a : dpset X) : [a] ≦ (1 : relation X).
+Lemma leq_tst_1 {X} (a : set X) : [a] ≦ (1 : relation X).
 Proof.
   compute; intuition eauto.
 Qed.
 
-Lemma tst_cap_1 {X} (a : dpset X) : [a] ≡ [a] ⊓ (1 : relation X).
+Lemma tst_cap_1 {X} (a : set X) : [a] ≡ [a] ⊓ (1 : relation X).
 Proof.
   compute; intuition eauto.
 Qed.
@@ -216,7 +216,7 @@ Proof.
     + split; [ | split]; auto.
 Qed.
 
-Lemma acyclic_tst {X} (R S : relation X) (Dom Rng : dpset X) :
+Lemma acyclic_tst {X} (R S : relation X) (Dom Rng : set X) :
   S ≦ [Dom] ⋅ S ⋅ [Rng] ->
   acyclic (R ⊔ S) <-> acyclic R /\ acyclic ([Rng] ⋅ R^+ ⋅ [Dom] ⊔ S).
 Proof.

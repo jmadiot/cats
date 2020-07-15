@@ -5,7 +5,7 @@ From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
 From AAC_tactics Require Import AAC.
 From CoLoR Require Util.Relation.Total.
 
-From Catincoq.lib Require Import Cat proprel acyclic co tactics.
+From Catincoq.lib Require Import Cat setrel acyclic co tactics.
 From Catincoq.lib Require aac_ra.
 
 Open Scope string_scope.
@@ -75,7 +75,7 @@ Definition partial_order {A} (R : relation A) := 1 ≦ R /\ R ⋅ R ≦ R /\ R �
 
 Definition strict_order {A} (R : relation A) := R ⋅ R ≦ R /\ R ⊓ 1 ≦ 0.
 
-Definition total_on {A} (E : dpset A) (R : relation A) := [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
+Definition total_on {A} (E : set A) (R : relation A) := [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
 
 Definition total {A} (R : relation A) := !1 ≦ R ⊔ R°.
 
@@ -96,8 +96,8 @@ Proof.
   - firstorder.
 Qed.
 
-Definition finite {A} (E : dpset A) :=
-  exists (l : list A), forall a, proj1_sig (E a) -> List.In a l.
+Definition finite {A} (E : set A) :=
+  exists (l : list A), forall a, E a -> List.In a l.
 
 Definition in_at {A} (l : list A) : nat -> A -> Prop :=
   fun n x => List.nth_error l n = Some x.
@@ -109,12 +109,12 @@ Definition in_before {A} (l : list A) : A -> A -> Prop :=
 choice (or the weaker axiom "boolean ideal prime theorem")
 https://proofwiki.org/wiki/Order-Extension_Principle *)
 
-Lemma cnvtst {A} {E : dpset A} : [E]° ≡ [E].
+Lemma cnvtst {A} {E : set A} : [E]° ≡ [E].
 Proof.
   intros a b; split; intros [-> Ha]; constructor; auto.
 Qed.
 
-Lemma every_strict_order_can_be_total_on_aux {A} (E : dpset A) (R : relation A) :
+Lemma every_strict_order_can_be_total_on_aux {A} (E : set A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
   finite E ->
@@ -141,7 +141,7 @@ Proof.
   - intros x y. destruct_rel. apply I. firstorder.
 Qed.
 
-Lemma every_strict_order_can_be_total_on {A} (E : dpset A) (R : relation A) :
+Lemma every_strict_order_can_be_total_on {A} (E : set A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
   finite E ->
@@ -163,7 +163,7 @@ Proof.
   - rewrite <-RS. kat.
 Qed.
 
-Lemma every_order_can_be_total_on {A} (E : dpset A) (R : relation A) :
+Lemma every_order_can_be_total_on {A} (E : set A) (R : relation A) :
   partial_order R ->
   finite E ->
   (forall x y, R x y \/ ~R x y) ->
@@ -208,24 +208,25 @@ Proof.
   destruct (classic (S x y)); firstorder.
 Qed.
 
-Instance linearisations_weq_ A : Proper (weq --> weq --> weq --> iff) (Cat.linearisations : dpset A -> _).
+Instance linearisations_weq_ (A : Type) :
+  Proper (weq --> weq --> weq --> iff) (Cat.linearisations : set A -> relation A -> set (relation A)).
 Proof.
   unfold Cat.linearisations, Cat.strict_total_order_on, Proper, respectful, flip.
   intros ? ? e1 ? ? e2 ? ? e3.
   rewrite ?e1, ?e2, ?e3; tauto.
 Qed.
 
-Lemma linearisations_weq {A} (E1 E2 : dpset A) (R1 R2 S1 S2 : relation A) :
+Lemma linearisations_weq {A : Type} (E1 E2 : set A) (R1 R2 S1 S2 : relation A) :
   E1 ≡ E2 ->
   R1 ≡ R2 ->
   S1 ≡ S2 ->
-  Cat.linearisations E1 R1 S1 ->
+  Cat.linearisations E1 R1 S1 <->
   Cat.linearisations E2 R2 S2.
 Proof.
-  intros -> -> ->; auto.
+  intros -> -> ->; tauto.
 Qed.
 
-Notation " x :: X " := (proj1_sig (X x)).
+Notation " x :: X " := ((X : set _) x).
 
 Ltac hkat_help :=
   repeat
@@ -238,7 +239,7 @@ Ltac hkat_help :=
       clear H
     end.
 
-Lemma transitive_dot_tst_l {X} (R : relation X) (E : dpset X) :
+Lemma transitive_dot_tst_l {X} (R : relation X) (E : set X) :
   is_transitive R -> is_transitive (R ⋅ [E]).
 Proof.
   unfold is_transitive.
@@ -246,7 +247,7 @@ Proof.
   intros ->; auto.
 Qed.
 
-Lemma transitive_dot_tst_r {X} (R : relation X) (E : dpset X) :
+Lemma transitive_dot_tst_r {X} (R : relation X) (E : set X) :
   is_transitive R -> is_transitive ([E] ⋅ R).
 Proof.
   unfold is_transitive.
@@ -266,24 +267,24 @@ Qed.
 Ltac type_ :=
   repeat
     match goal with
-    | Hx : ?x :: ?X |- ?x :: ?X => assumption
-    | Hx : ?x :: _ ⊓ _ |- _ => destruct Hx
-    | Hx : ?x :: ?X, Hy : ?x :: ?Y, XY : ?X ⊓ ?Y ≦ bot |- _ =>
+    | Hx : ?X |- ?X => assumption
+    | Hx : (_ ⊓ _) _ |- _ => destruct Hx
+    | Hx : ?X ?x, Hy : ?Y ?x, XY : ?X ⊓ ?Y ≦ bot |- _ =>
       eapply XY; split; eauto
-    | H : (?r ⋅ [?Y]) ?x ?v |- ?v :: ?Y => destruct_rel; assumption
-    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?x ?v |- ?v :: ?Y => destruct_rel; assumption
-    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?v ?y |- ?v :: ?X => destruct_rel; assumption
-    | H : ?r ?x ?v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?Y =>
+    | H : (?r ⋅ [?Y]) ?x ?v |- ?Y ?v => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?x ?v |- ?Y ?v => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?v ?y |- ?X ?v => destruct_rel; assumption
+    | H : ?r ?x ?v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?Y ?v =>
       assert (([X] ⋅ r ⋅ [Y]) x v) by apply H2, H;
       destruct_rel; assumption
-    | H : ?r ?v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?v :: ?X =>
+    | H : ?r ?v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?X ?v =>
       assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
       destruct_rel; assumption
-    | |- _ :: _ ⊓ _ => split
-    | |- _ :: !_ => try solve [intro; type_]
-    | H : ?X ≦ ?Y, H' : ?x :: ?X |- ?x :: ?Y => apply H, H'
-    | H : ?X ≦ ?Y |- ?x :: ?Y => try solve [apply H; type_]
-    | |- _ :: top => constructor
+    | |- (_ ⊓ _) _ => split
+    | |- (!_) _ => try solve [intro; type_]
+    | H : ?X ≦ ?Y, H' : ?X ?x |- ?Y ?x => apply H, H'
+    | H : ?X ≦ ?Y |- ?Y ?x => try solve [apply H; type_]
+    | |- top _ => constructor
     end.
 
 Tactic Notation "type" := type_.
@@ -392,8 +393,8 @@ Proof.
     replace @Cat.cross with @cross in Hco by admit.
     replace @Cat.co_locs with @co_locs in Hco by admit.
     replace (fun Si : Ensemble events =>
-              (forall x : events, Si x -> ` W x) /\ (forall x y : events, Si x -> Si y -> loc x y))
-      with (partition loc `W) in Hco by admit.
+              (forall x : events, Si x -> Ensemble_of_dpset W x) /\ (forall x y : events, Si x -> Si y -> loc x y))
+      with (partition loc W) in Hco by admit.
     pose proof Hco as co_total%GOT.
     pose proof Hco as co_total'%GOT'.
     pose proof Hco as co_order%GOO.
@@ -548,7 +549,7 @@ Proof.
       * (* w1 -co-> w2 -rf-> r, which should contradict the "short" hypothesis *)
         destruct short. exists w2.
         -- (* w1 to w2 *)
-           destruct (proj2_sig (IW w1)).
+           destruct (classic (IW w1)).
            ++ (* w1 is initial *)
               right. exists w2. exists w1. now split; auto. now apply co_loc.
               split; auto. split. unfold M. right; auto.
@@ -562,7 +563,7 @@ Proof.
            exists r. 2: now split; auto. exists w2. now split; auto.
            split. 2: now apply rf_loc.
            assert (r :: !IW). now type.
-           destruct (proj2_sig (IW w2)).
+           destruct (classic (IW w2)).
            ++ (* w2 is initial *)
               right. exists r. exists w2. now split; auto. now apply rf_loc.
               split; auto. split. unfold M. left; auto. auto.
@@ -678,9 +679,9 @@ Proof.
       replace @Cat.cross with @cross by admit.
       replace @Cat.co_locs with @co_locs by admit.
       replace (fun Si : Ensemble events =>
-                 (forall x : events, Si x -> ` W x)
+                 (forall x : events, Si x -> Ensemble_of_dpset W x)
                  /\(forall x y : events, Si x -> Si y -> loc x y))
-        with (partition loc `W) by admit.
+        with (partition loc W) by admit.
       apply GOS.
       clear GOS GOT GOT' GOO.
       split. 2:split. 2:easy. 2:intros l; split; [ split | split ].
@@ -737,7 +738,7 @@ Proof.
               rewrite S_rf in rw1. destruct rw1 as [rw1 rw1']. apply rw1'.
               exists w2.
               ** (** First part of the path: co w1 w2 *)
-                 destruct (proj2_sig (IW w1)) as [w1i | w1ni].
+                 destruct (classic (IW w1)) as [w1i | w1ni].
                  (* w1 initial *)
                  { subst co. right. t. now destruct_rel. type. right; type. }
                  (* w1 not initial *)
@@ -790,8 +791,8 @@ Proof.
     revert Hsc.
     apply acyclic_leq.
     rewrite !cap_cartes.
-    assert (E0 : [empty ⊔ empty : dpset _] ≡ (0 : relation events)) by kat.
-    assert (E1 : [top : dpset _] ≡ (1 : relation events)) by kat.
+    assert (E0 : [empty ⊔ empty : set _] ≡ (0 : relation events)) by kat.
+    assert (E1 : [top : set _] ≡ (1 : relation events)) by kat.
 Abort. (*
     rewrite E0, E1.
     rewrite !leq_tst_1.
@@ -871,10 +872,10 @@ Lemma cnv_inj (l : level) (X : kat.ops) {_ : kat.laws X} {_ : laws l X} {_ : CNV
 Proof.
 Abort (* not provable? *).
 
-Lemma cnv_inj {X} (a : dpset X) : [a]° ≡ [a].
+Lemma cnv_inj {X} (a : set X) : [a]° ≡ [a].
 Proof.
   compute.
-  intros x y. split; intros [? ?]; subst y; destruct (a x); firstorder.
+  intros x y. split; intros [? ?]; subst y; firstorder.
 Qed.
 
 Lemma tso_nosm_stronger_than_x86tso c :
@@ -897,7 +898,7 @@ Proof.
     auto.
   - (* main *)
     destrunfold.
-    set (MF := (uset _ : dpset _)) in Hghb. fold MF in Hghb.
+    set (MF := (uset _ : set _)) in Hghb. fold MF in Hghb.
     rewrite !cap_cartes.
 
     (* all of the complexity below is due to the fact that po[mf]po is
@@ -906,8 +907,8 @@ Proof.
      com. This intuition is formalized in [acyclic_range_domain],
      which allows us to conclude, painfully, since range(rel) is not a
      test *)
-    assert (E0 : [empty : dpset _] ≡ (0 : relation events)) by kat.
-    assert (E1 : [top : dpset _] ≡ (1 : relation events)) by kat.
+    assert (E0 : [empty : set _] ≡ (0 : relation events)) by kat.
+    assert (E1 : [top : set _] ≡ (1 : relation events)) by kat.
     (* simplication inside acyclic *)
     eapply acyclic_weq.
     { rewrite ?kat.inj_cup. ra_normalise. reflexivity. }
@@ -942,7 +943,7 @@ Proof.
         rewrite dotcap1l_rel, dotcap1r_rel; kat || ra.
       }
       (* assert (cow : co ⋅ [!W] ≦ 0). rewrite co_ww. kat.
-      assert (woc : [@neg (@tst dprop_hrel_dpset_kat_ops events) W] ⋅ co ≦ 0).
+      assert (woc : [@neg (@tst dprop_hrel_set_kat_ops events) W] ⋅ co ≦ 0).
       rewrite co_ww. kat.
       assert (frw : rf°⋅co ⋅ [!W] ≦ 0). aac_rewrite cow. ra.
       assert (rfr : [!R] ⋅ rf°⋅co ≦ 0). rewrite rf_wr, cnvdot, cnv_inj. kat.

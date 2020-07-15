@@ -14,6 +14,12 @@ Definition functional_relation_domain {A B} (dom : Ensemble A) (R : A -> B -> Pr
   (forall a, dom a <-> exists b, R a b) /\
   (forall a b b', R a b -> R a b' -> b = b').
 
+Definition one_of_each {X} : Ensemble (Ensemble X) -> Ensemble (Ensemble X) :=
+  fun A b => exists f : Ensemble X -> X -> Prop,
+      (forall e fe, f e fe -> e fe) /\
+      functional_relation_domain A f /\
+      Same_set _ b (relational_image f A).
+
 Lemma list_fun_rel_dom {A B} (dom : Ensemble A) (R : A -> B -> Prop) :
   functional_relation_domain dom R ->
   forall l : list A, Forall dom l -> exists l' : list B, Forall2 R l l'.
@@ -28,12 +34,6 @@ Proof.
     destruct IHl as (l' & Hl').
     exists (b :: l'). now constructor.
 Qed.
-
-Definition one_of_each {X} : Ensemble (Ensemble X) -> Ensemble (Ensemble X) :=
-  fun A b => exists f : Ensemble X -> X -> Prop,
-      (forall e fe, f e fe -> e fe) /\
-      functional_relation_domain A f /\
-      Same_set _ b (relational_image f A).
 
 Definition set_of_list {X} : list X -> Ensemble X :=
   fun l x => In x l.

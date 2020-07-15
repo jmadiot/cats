@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles List Lia.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat proprel tactics oneofeach acyclic.
+From Catincoq.lib Require Import Cat setrel tactics oneofeach acyclic.
 
 (** This file uses fun and prop extensionalities in many places, it's
 not sure yet whether we will get rid of them or just add them as
@@ -29,33 +29,18 @@ Lemma set_ext {A} (E E' : set A) : E ≡ E' -> E = E'.
 Proof.
   intros e.
   apply functional_extensionality; intros x.
-  apply sig_ext, propositional_extensionality, e.
+  apply propositional_extensionality, e.
 Qed.
 
-Definition ensemble_to_set {A} (E : Ensemble A) : set A :=
-  fun x => exist _ (E x) (Classical_Prop.classic _).
-
-Notation " ⟨ E ⟩ " := (ensemble_to_set E) (at level 9).
-Notation " ` E " := (Ensemble_of_dpset E) (at level 9).
-
-Lemma to_set_cap {A} E F : ⟨Intersection A E F⟩ ≡ ⟨E⟩ ⊓ ⟨F⟩.
+Lemma to_set_cap {A} E F : Intersection A E F ≡ E ⊓ F.
 Proof.
   intros x; split; intros []; split; auto.
 Qed.
 
 Lemma set_weq {A} (E E' : set A) :
-  (forall a, proj1_sig (E a) <-> proj1_sig (E' a)) -> E ≡ E'.
+  (forall a, E a <-> E' a) -> E ≡ E'.
 Proof.
   firstorder.
-Qed.
-
-Lemma set_Ensemble_set {A} (E : set A) : ⟨`E⟩ ≡ E.
-Proof.
-  apply set_weq; simpl; unfold Ensemble_of_dpset; tauto.
-Qed.
-Lemma Ensemble_set_Ensemble {A} (E : Ensemble A) : (`⟨E⟩) = E.
-Proof.
-  apply functional_extensionality; auto.
 Qed.
 
 Definition is_strict_order {A} (R : relation A) :=
@@ -112,8 +97,7 @@ Proof.
   apply propositional_extensionality; split; apply xC.
 Qed.
 
-Definition atloc {c} (l : location c) : set (events c) :=
-  fun e => exist _ (location_of e = l) (Classical_Prop.classic _).
+Definition atloc {c} (l : location c) : set (events c) := fun e => location_of e = l.
 
 (*
 (** this can be implemented with [equivalence_classes] but it seems
@@ -130,19 +114,13 @@ Program Definition atloc {c} (l : location c) : set (events c) :=
 Next Obligation. destruct (location_eq_dec (location_of e) l); auto. Defined.
 *)
 
-Definition strict_total_order_on {A}  (E : dpset A) (R : relation A) :=
+Definition strict_total_order_on {A}  (E : set A) (R : relation A) :=
   is_strict_order R /\
-  R ≦ [E]⋅top⋅[E] /\
-  [E]⋅!1⋅[E] ≦ R ⊔ R°.
+  R ≦ [E] ⋅ top ⋅ [E] /\
+  [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
 
-Definition strict_total_order_on' {A}  (E : Ensemble A) (R : relation A) :=
-  is_strict_order R /\
-  R ≦ [⟨E⟩] ⋅ top ⋅ [⟨E⟩] /\
-  [⟨E⟩] ⋅ !1 ⋅ [⟨E⟩] ≦ R ⊔ R°.
-
-Definition linear_extension_on {A} (E : dpset A) (R S : relation A) :=
-  R ≦ S /\
-  strict_total_order_on E S.
+Definition linear_extension_on {A} (E : set A) (R S : relation A) :=
+  R ≦ S /\ strict_total_order_on E S.
 
 (** [linearisations E R] is the set of strict total orders that
 contain ([R] restricted to [E]). When [R] is not itself transitive, it
@@ -156,15 +134,15 @@ Definition linearisations {A} (E : set A) (R : relation A)
 (*
 Definition linearisations' {A} (E : Ensemble A) (R : relation A)
   : Ensemble (relation A)
-  := fun S => strict_total_order_on' E S /\ [⟨E⟩] ⋅ R ⋅ [⟨E⟩] ≦ S.
+  := fun S => strict_total_order_on' E S /\ [E] ⋅ R ⋅ [E] ≦ S.
 *)
 
 (* Definition strict_order {A} (R : relation A) := R ⋅ R ≦ R /\ R ⊓ 1 ≦ 0. *)
 
-Definition total_on {A} (E : dpset A) (R : relation A) := [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
+Definition total_on {A} (E : set A) (R : relation A) := [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
 
 (* the finite version of this is proved in zoo.v *)
-Axiom every_strict_order_can_be_total_on : forall {A} (E : dpset A) (R : relation A),
+Axiom every_strict_order_can_be_total_on : forall {A} (E : set A) (R : relation A),
   is_strict_order R ->
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
@@ -199,16 +177,16 @@ Definition partition {A} (equiv : relation A) (X : Ensemble A)
   := subset_image (Intersection _ X) (equivalence_classes equiv).
 
 Lemma partition_spec {c} (E : Ensemble (events c)) (E' : Ensemble (events c)) :
-  partition (loc c) E E' <-> exists l, ⟨E'⟩ ≡ atloc l ⊓ ⟨E⟩.
+  partition (loc c) E E' <-> exists l, E' ≡ atloc l ⊓ E.
 Proof.
   split.
   - intros (C & Ceq & ->).
     destruct Ceq as (x & Cx & xC).
     exists (location_of x).
     rewrite to_set_cap.
-    enough (⟨ C ⟩ ≡ atloc (location_of x)) as ->. now apply capC.
+    enough (C ≡ atloc (location_of x)) as ->. now apply capC.
     apply set_weq. simpl. intros y. now rewrite <-xC, <-location_of_spec.
-  - intros (l, e). eexists (Ensemble_of_dpset (atloc l)). split.
+  - intros (l, e). eexists (atloc l). split.
     + destruct (location_of_surj l) as (x, <-). exists x. split. easy.
       intros y. rewrite <-location_of_spec. easy.
     + apply Extensionality_Ensembles'; split.
@@ -235,32 +213,30 @@ Qed.
 (* All linearisations of [R] along different [sets] *)
 Definition co_locs {A} (R : relation A) (sets : Ensemble (Ensemble A))
   : Ensemble (Ensemble (relation A))
-  := subset_image (fun E => linearisations ⟨E⟩ R) sets.
+  := subset_image (fun E => linearisations E R) sets.
 
 Lemma co_locs_partition_spec {c} R E S :
-  co_locs R (partition (loc c) `E) S <-> exists l, S = linearisations (E ⊓ atloc l) R.
+  co_locs R (partition (loc c) E) S <-> exists l, S = linearisations (E ⊓ atloc l) R.
 Proof.
   split.
   - intros (E' & (C & (x & Cx & xC) & ->) & ->). exists (location_of x). f_equal.
-    apply set_ext. rewrite to_set_cap. rewrite set_Ensemble_set.
-    enough (⟨ C ⟩ ≡ atloc (location_of x)) as ->; auto.
-    intros a. hnf. simpl. rewrite location_of_spec.
-    simpl. rewrite <-xC. rewrite loc_sym_. tauto.
+    apply set_ext. rewrite to_set_cap.
+    enough (C ≡ atloc (location_of x)) as ->; auto.
+    intros a. rewrite <-xC, <-location_of_spec. unfold atloc. split; auto.
   - intros (l & ->).
     unfold co_locs, subset_image.
-    set (x := (E ⊓ atloc l)). exists (`x). subst x.
-    split.
-    + rewrite partition_spec. eauto. exists l. now rewrite !set_Ensemble_set, capC.
-    + f_equal. apply set_ext. now rewrite set_Ensemble_set.
+    set (x := (E ⊓ atloc l)). exists x. subst x.
+    split; auto.
+    rewrite partition_spec. eauto. exists l. now rewrite capC.
 Qed.
 
 Definition cross {A} (S : Ensemble (Ensemble (relation A)))
   : Ensemble (relation A)
   := subset_image union_of_relations (one_of_each S).
 
-Definition generate_orders A (loc : relation A) (s : dpset A) (pco : relation A)
+Definition generate_orders A (loc : relation A) (s : set A) (pco : relation A)
   : Ensemble (relation A)
-  := cross (co_locs pco (partition loc `s)).
+  := cross (co_locs pco (partition loc s)).
 
 Lemma cnvtst {A} {E : set A} : [E]° ≡ [E].
 Proof.
@@ -275,21 +251,21 @@ Tactic Notation "elim_cnv" "in" hyp(H) :=
   repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
           ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg in H).
 
-Lemma tst_dot {A} (R : relation A) E x y : ([E] ⋅ R) x y <-> `E x /\ R x y.
+Lemma tst_dot {A} (R : relation A) E x y : ([E] ⋅ R) x y <-> E x /\ R x y.
 Proof.
   split.
   - intros [x_ [<- e] r]. intuition.
   - exists x; firstorder.
 Qed.
 
-Lemma dot_tst {A} (R : relation A) E x y : (R ⋅ [E]) x y <-> R x y /\ `E y.
+Lemma dot_tst {A} (R : relation A) E x y : (R ⋅ [E]) x y <-> R x y /\ E y.
   split.
   - intros [y_ r [<- e]]. intuition.
   - exists y; firstorder.
 Qed.
 
 Lemma tst_dot_tst {A} (R : relation A) E E' x y :
-  ([E] ⋅ R ⋅ [E']) x y <-> `E x /\ R x y /\ `E' y.
+  ([E] ⋅ R ⋅ [E']) x y <-> E x /\ R x y /\ E' y.
 Proof.
   now rewrite dot_tst, tst_dot.
 Qed.
@@ -299,9 +275,6 @@ must relate any two [R]-related [E] events at the same location, and
 be a linearisation of [E] on each location *)
 
 Lemma generate_orders_spec_3 {c} E (R S : relation (events c)) :
-  (* acyclic pco (* is that right? *)
-     do not add "pco <= loc" as it is not always true e.g. in rc11
-     *)
   generate_orders (events c) (loc c) E R S <->
   (R ⊓ [E] ⋅ loc c ⋅ [E]) ≦ S
   /\ S ≦ loc c
@@ -509,7 +482,7 @@ Proof.
     rewrite tst_dot_tst in ST. tauto.
 Qed.
 
-Lemma generate_orders_spec_2 {ev} (W : dpset ev) (loc pco co : relation ev) :
+Lemma generate_orders_spec_2 {ev} (W : set ev) (loc pco co : relation ev) :
   is_strict_order pco (* is that right? *) ->
   generate_orders ev loc W pco co <->
   extends_along pco ([W] ⋅ loc ⋅ [W]) co.
@@ -543,18 +516,18 @@ Proof.
        *)
 Abort.
 
-Definition spec1 {A} (E : dpset A) (loc R S : relation A) :=
+Definition spec1 {A} (E : set A) (loc R S : relation A) :=
   S ≦ [E] ⋅ S ⋅ [E] /\
   S ⊓ 1 ≦ 0 /\
   S ⋅ S ≦ S /\
   S ≦ loc /\
   forall x y : A,
     loc x y ->
-    proj1_sig (E x) ->
-    proj1_sig (E y) ->
+    E x ->
+    E y ->
     (R x y -> S x y) /\ (x <> y -> S x y \/ S y x).
 
-Lemma generate_orders_spec {A} (E : dpset A) (loc R S : relation A) :
+Lemma generate_orders_spec {A} (E : set A) (loc R S : relation A) :
   generate_orders A loc E R S <->
   spec1 E loc R S.
 
@@ -566,14 +539,14 @@ Proof.
     + intros x y.
 Abort.
 
-Lemma generate_orders_bounds {A} (E : dpset A) (loc R S : relation A) :
+Lemma generate_orders_bounds {A} (E : set A) (loc R S : relation A) :
   generate_orders A loc E R S -> S ≦ [E] ⋅ S ⋅ [E].
 Proof.
   (* rewrite generate_orders_spec. unfold spec1. *)
   (* tauto. *)
 Abort.
 
-Lemma spec1_spec2 {A} (E : dpset A) (loc R S : relation A) :
+Lemma spec1_spec2 {A} (E : set A) (loc R S : relation A) :
   spec1 E loc R S <-> extends_along R ([E]⋅loc⋅[E]) S.
 Proof.
   split.
@@ -581,9 +554,9 @@ Proof.
     + destruct_rel. spec Stot x y. destruct Stot as [RS Stot]; auto.
 Abort.
 
-Lemma generate_cos_spec {A} (W IW FW : dpset A) (loc : relation A) :
+Lemma generate_cos_spec {A} (W IW FW : set A) (loc : relation A) :
   let co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]) in
-  let generate_orders s pco := cross (co_locs pco (partition loc (Ensemble_of_dpset s))) in
+  let generate_orders s pco := cross (co_locs pco (partition loc s)) in
   let generate_cos pco := generate_orders W pco in
   forall co,
     generate_cos co0 co ->
