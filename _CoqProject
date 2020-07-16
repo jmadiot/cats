@@ -4,8 +4,10 @@ lib/aac_ra.v
 lib/acyclic.v
 lib/Cat.v
 lib/co.v
+lib/defs.v
 lib/dproprel.v
 lib/interp.v
+lib/linearext.v
 lib/list.v
 lib/oneofeach.v
 lib/proprel_classic.v

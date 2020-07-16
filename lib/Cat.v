@@ -2,9 +2,7 @@
     definitions from RelationAlgebra *)
 From Coq Require Import Ensembles List String Relations RelationClasses Classical.
 From RelationAlgebra Require Import lattice kat.
-From Catincoq Require Import proprel.
-
-Definition relation A := hrel A A.
+From Catincoq Require Import proprel defs.
 
 Definition union `{lattice.ops} := cup.
 Definition intersection `{lattice.ops} := cap.

@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles List Lia.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat proprel tactics oneofeach acyclic.
+From Catincoq.lib Require Import defs Cat proprel tactics oneofeach linearext acyclic.
 
 (** This file uses fun and prop extensionalities in many places, it's
 not sure yet whether we will get rid of them or just add them as
@@ -43,10 +43,7 @@ Proof.
   firstorder.
 Qed.
 
-Definition is_strict_order {A} (R : relation A) :=
-  relalg.is_irreflexive R /\
-  is_transitive R.
-
+(** TODO remove this def *)
 (* if R is a partial strict order R, then S extends R, is a strict
    order, and is "total along" the equivalence relation ER *)
 Definition extends_along {A} (R ER S : relation A) :=
@@ -54,11 +51,9 @@ Definition extends_along {A} (R ER S : relation A) :=
   is_strict_order S /\
   ER ≡ S ⊔ S° ⊔ 1.
 
-Definition equivalence_classes {A} (R : relation A) : Ensemble (Ensemble A) :=
-  fun C => exists x, C x /\ forall y, R x y <-> C y.
-
-Definition equivalence_classes_sig {A} (R : relation A) : Ensemble A -> Type :=
-  fun C => { x | C x /\ forall y, R x y <-> C y }.
+(* TODO remove *)
+(* Definition equivalence_classes_sig {A} (R : relation A) : Ensemble A -> Type := *)
+(*   fun C => { x | C x /\ forall y, R x y <-> C y }. *)
 
 Lemma loc_sym_ {c} (x y : events c) : loc c x y <-> loc c y x.
 Proof.
@@ -70,8 +65,12 @@ Proof.
   split; apply loc_sym.
 Qed.
 
-(** trying to define [location] from [loc] below, but that seems convoluted,
-    it's probably better to define [location] in Cat.v *)
+Definition equivalence_classes {A} (R : relation A) : Ensemble (Ensemble A) :=
+  fun C => exists x, C x /\ forall y, R x y <-> C y.
+
+(** below, trying to define [location] as [loc] equivalence classes,
+    but that seems convoluted, it's probably better to define
+    [location] in Cat.v *)
 (** this can be implemented with [equivalence_classes] but it seems
 backwards, so maybe we should define [loc] with [location_of] instead *)
 Definition location (c : candidate) : Type := sig (equivalence_classes (loc c)).
@@ -114,6 +113,7 @@ Program Definition atloc {c} (l : location c) : set (events c) :=
 Next Obligation. destruct (location_eq_dec (location_of e) l); auto. Defined.
 *)
 
+(* TODO eliminate these definitions *)
 Definition strict_total_order_on {A}  (E : set A) (R : relation A) :=
   is_strict_order R /\
   R ≦ [E] ⋅ top ⋅ [E] /\
@@ -136,10 +136,6 @@ Definition linearisations' {A} (E : Ensemble A) (R : relation A)
   : Ensemble (relation A)
   := fun S => strict_total_order_on' E S /\ [E] ⋅ R ⋅ [E] ≦ S.
 *)
-
-(* Definition strict_order {A} (R : relation A) := R ⋅ R ≦ R /\ R ⊓ 1 ≦ 0. *)
-
-Definition total_on {A} (E : set A) (R : relation A) := [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
 
 (* the finite version of this is proved in zoo.v *)
 Axiom every_strict_order_can_be_total_on : forall {A} (E : set A) (R : relation A),
@@ -237,19 +233,6 @@ Definition cross {A} (S : Ensemble (Ensemble (relation A)))
 Definition generate_orders A (loc : relation A) (s : set A) (pco : relation A)
   : Ensemble (relation A)
   := cross (co_locs pco (partition loc s)).
-
-Lemma cnvtst {A} {E : set A} : [E]° ≡ [E].
-Proof.
-  intros a b; split; intros [-> Ha]; constructor; auto.
-Qed.
-
-Tactic Notation "elim_cnv" :=
-  repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
-          ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg).
-
-Tactic Notation "elim_cnv" "in" hyp(H) :=
-  repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
-          ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg in H).
 
 Lemma tst_dot {A} (R : relation A) E x y : ([E] ⋅ R) x y <-> E x /\ R x y.
 Proof.

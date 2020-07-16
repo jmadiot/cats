@@ -25,6 +25,7 @@ Tactic Notation "spec" hyp(H) "by" tactic(t) :=
 
 Tactic Notation "apply" "!" constr(t) := repeat apply t.
 
+Tactic Notation "apply" "?" constr(t) := try apply t.
 
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
 
@@ -47,3 +48,30 @@ Ltac destruct_rel :=
     | H : [_] _ _ |- _ => destruct H as [->]
     | H : 1 _ _ |- _ => destruct H
     end.
+
+Tactic Notation "elim_trans" constr(r) :=
+  let Heq := fresh "Heq" in
+  assert (Heq : r ≡ r^+) by (now symmetry; apply itr_transitive);
+  rewrite Heq in *;
+  clear Heq.
+
+Tactic Notation "elim_trans" :=
+  match goal with
+  | H : is_transitive ?r |- _ => elim_trans r; clear H
+  | H : ?r ⋅ ?r ≦ ?r |- _ => elim_trans r; clear H
+  end.
+
+From Catincoq.lib Require Import proprel.
+
+Lemma cnvtst {A} {E : set A} : [E]° ≡ [E].
+Proof.
+  intros a b; split; intros [-> Ha]; constructor; auto.
+Qed.
+
+Tactic Notation "elim_cnv" :=
+  repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
+          ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg).
+
+Tactic Notation "elim_cnv" "in" hyp(H) :=
+  repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
+          ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg in H).

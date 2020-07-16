@@ -1,5 +1,5 @@
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat proprel tactics.
+From Catincoq.lib Require Import defs proprel Cat tactics.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.
@@ -64,16 +64,6 @@ Proof.
   destruct_rel.
   exists y; hnf; auto. exists x; hnf; auto.
   split; auto. exists y; hnf; auto. exists x; split; auto.
-Qed.
-
-Lemma leq_tst_1 {X} (a : set X) : [a] ≦ (1 : relation X).
-Proof.
-  compute; intuition eauto.
-Qed.
-
-Lemma tst_cap_1 {X} (a : set X) : [a] ≡ [a] ⊓ (1 : relation X).
-Proof.
-  compute; intuition eauto.
 Qed.
 
 Lemma irreflexive_spec {X} (R : relation X) : irreflexive R <-> forall x, ~ R x x.
@@ -271,15 +261,3 @@ Proof.
   rewrite SS. ra_normalise.
   intros x x_ [xx <-]. apply SS. exists x; auto.
 Qed.
-
-Tactic Notation "elim_trans" constr(r) :=
-  let Heq := fresh "Heq" in
-  assert (Heq : r ≡ r^+) by (now symmetry; apply itr_transitive);
-  rewrite Heq in *;
-  clear Heq.
-
-Tactic Notation "elim_trans" :=
-  match goal with
-  | H : is_transitive ?r |- _ => elim_trans r; clear H
-  | H : ?r ⋅ ?r ≦ ?r |- _ => elim_trans r; clear H
-  end.

@@ -1,3 +1,15 @@
+(** This file shows that the following two formulations of the
+"uniproc" condition are equivalent.
+
+- first formulation : [po ⊓ loc ⊔ com] is acyclic
+
+- second formulation : [po ⋅ com^+] is irreflexive
+
+This equivalence assumes that [po] must be irreflexive and that [com]
+is acyclic, to repeatedly contract cycles. The part most specific to
+memory models is Lemma [cases_uniproc] were [poloc] in [com;poloc;com]
+is absorbed by [com]s *)
+
 From RelationAlgebra Require Import lattice prop monoid rel all.
 From Coq Require Import Relations String.
 

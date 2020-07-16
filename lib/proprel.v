@@ -40,6 +40,7 @@ between types in this universe form a kleene algebra.  *)
 
 Universe U.
 Definition hrel (n m: Type@{U}) := n -> m -> Prop.
+Definition relation A := hrel A A.
 
 (** * Relations as a (bounded, distributive) lattice *)
 
