@@ -5,7 +5,7 @@ From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
 From AAC_tactics Require Import AAC.
 From CoLoR Require Util.Relation.Total.
 
-From Catincoq.lib Require Import Cat setrel acyclic co tactics.
+From Catincoq.lib Require Import Cat proprel acyclic co tactics.
 From Catincoq.lib Require aac_ra.
 
 Open Scope string_scope.

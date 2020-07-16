@@ -1,5 +1,5 @@
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat setrel tactics.
+From Catincoq.lib Require Import Cat proprel tactics.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.

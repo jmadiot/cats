@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles List Lia.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import Cat setrel tactics oneofeach acyclic.
+From Catincoq.lib Require Import Cat proprel tactics oneofeach acyclic.
 
 (** This file uses fun and prop extensionalities in many places, it's
 not sure yet whether we will get rid of them or just add them as
