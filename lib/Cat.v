@@ -2,7 +2,8 @@
     definitions from RelationAlgebra *)
 From Coq Require Import Ensembles List String Relations RelationClasses Classical.
 From RelationAlgebra Require Import lattice kat.
-From Catincoq Require Import proprel defs.
+From Catincoq Require Import proprel.
+From Catincoq Require Export defs.
 
 Definition union `{lattice.ops} := cup.
 Definition intersection `{lattice.ops} := cap.
@@ -20,13 +21,9 @@ Definition id {A} : relation A := 1.
 Definition domain {A} : relation A -> set A := fun R x => exists y, R x y.
 Definition range  {A} : relation A -> set A := fun R y => exists x, R x y.
 
-Definition irreflexive {A} (R : relation A) := cap R 1 ≦ bot.
-
 Notation refl_clos := (fun R => cap R 1) (only parsing).
 Notation trans_clos := (hrel_itr _) (only parsing).
 Notation refl_trans_clos := (hrel_str _) (only parsing).
-
-Definition acyclic {A} (R : relation A) := leq (cap (itr _ R) 1) bot.
 
 Class StrictTotalOrder {A} (R : relation A) :=
   { StrictTotalOrder_Strict :> StrictOrder R;
@@ -36,27 +33,20 @@ Class StrictTotalOrder_on {A} (E : set A) (R : relation A) :=
   { StrictTotalOrder_on_Strict :> StrictOrder R;
     StrictTotalOrder_on_Total : forall a b, a <> b -> (E a /\ E b) <-> (R a b \/ R b a) }.
 
-Definition strict_total_order_on {A}  (E : set A) (R : relation A) :=
-  R ⊓ 1 ≦ 0 /\
-  R ⋅ R ≦ R /\
-  R ≦ [E] ⋅ R ⋅ [E] /\
-  [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
-
-Definition linearisations {A} (E : set A) (R : relation A) : set (relation A) :=
-  fun S => strict_total_order_on E S /\ [E] ⋅ R ⋅ [E] ≦ S.
-
-Definition set_flatten {A} : Ensemble (set A) -> set A := fun xss x => exists xs, xss xs /\ xs x.
-
-Definition subset_image {A B} (f : A -> B) (X : Ensemble A) : Ensemble B := fun y => exists x, X x /\ y = f x.
+Definition linearisations {A} := @linear_extension_on A.
 
 Definition co_locs {A} (pco : relation A) (wss : Ensemble (set A)) : Ensemble (set (relation A)) :=
-  subset_image (fun ws => linearisations ws pco) wss.
+  subset_image (fun ws => linear_extension_on ws pco) wss.
 
-Definition cross {A} (Si : Ensemble (set (relation A))) : set (relation A) :=
+Definition cross {A} (S : Ensemble (set (relation A)))
+  : Ensemble (relation A)
+  := subset_image union_of_relations (one_of_each S).
+
+(* Definition cross {A} (Si : Ensemble (set (relation A))) : set (relation A) :=
   fun ei : relation A => exists (l : list (relation A)) (L : list (set (relation A))),
       (forall x y, ei x y <-> exists e, In e l /\ e x y) /\
       (forall X, Si X <-> In X L) /\
-      Forall2 (fun ei Si => Si ei) l L.
+      Forall2 (fun ei Si => Si ei) l L. *)
 
 Definition diagonal {A} : set A -> relation A := fun X => [X].
 

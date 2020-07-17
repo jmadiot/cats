@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles List Lia.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import defs Cat proprel tactics oneofeach linearext acyclic.
+From Catincoq.lib Require Import defs Cat proprel tactics oneofeach (* acyclic *) relalglaws.
 
 (** This file uses fun and prop extensionalities in many places, it's
 not sure yet whether we will get rid of them or just add them as
@@ -113,24 +113,27 @@ Program Definition atloc {c} (l : location c) : set (events c) :=
 Next Obligation. destruct (location_eq_dec (location_of e) l); auto. Defined.
 *)
 
-(* TODO eliminate these definitions *)
+(* TODO eliminate these definitions? *)
 Definition strict_total_order_on {A}  (E : set A) (R : relation A) :=
   is_strict_order R /\
   R ≦ [E] ⋅ top ⋅ [E] /\
-  [E] ⋅ !1 ⋅ [E] ≦ R ⊔ R°.
+  total_on E R.
 
+(*
 Definition linear_extension_on {A} (E : set A) (R S : relation A) :=
   R ≦ S /\ strict_total_order_on E S.
+*)
 
 (** [linearisations E R] is the set of strict total orders that
 contain ([R] restricted to [E]). When [R] is not itself transitive, it
 is possible that the result is different from [linearisations E (R^+)]
 *)
 
+(*
 Definition linearisations {A} (E : set A) (R : relation A)
   : Ensemble (relation A)
   := fun S => strict_total_order_on E S /\ [E] ⋅ R ⋅ [E] ≦ S.
-
+*)
 (*
 Definition linearisations' {A} (E : Ensemble A) (R : relation A)
   : Ensemble (relation A)
@@ -138,15 +141,6 @@ Definition linearisations' {A} (E : Ensemble A) (R : relation A)
 *)
 
 (* the finite version of this is proved in zoo.v *)
-Axiom every_strict_order_can_be_total_on : forall {A} (E : set A) (R : relation A),
-  is_strict_order R ->
-  (forall x y : A, R x y \/ ~R x y) ->
-  (forall x y : A, x = y \/ x <> y) ->
-  exists S,
-    is_strict_order S /\
-    S ≦ [E] ⋅ top ⋅ [E] /\
-    total_on E S /\
-    [E] ⋅ R ⋅ [E] ≦ S.
 
 Lemma strict_order_of_acyclic {A} (R : relation A) :
   acyclic R <-> is_strict_order (R^+).
@@ -154,23 +148,51 @@ Proof.
   unfold acyclic, is_strict_order, is_transitive, relalg.is_irreflexive. intuition hkat.
 Qed.
 
+(*
+(* TODO unused? *)
 Lemma linearisations_exist {A} (E : set A) (R : relation A) :
+  finite_set E ->
   acyclic ([E] ⋅ R ⋅ [E]) -> exists S, linearisations E R S.
 Proof.
-  intros OR % strict_order_of_acyclic.
-  destruct (every_strict_order_can_be_total_on E _ OR) as (S & OS & SE & Tot & RS);
+  intros F OR % strict_order_of_acyclic.
+  destruct (every_strict_order_can_be_total_on E (([E]⋅R⋅[E])^+)) as (S & OS & SE & Tot & RS);
     try (intros; apply Classical_Prop.classic).
-  exists S. repeat (easy || split). rewrite <-RS. kat.
+  assumption.
+  now apply is_strict_order_spec.
+  exists S. split. split; auto. now apply is_strict_order_spec.
+  repeat (easy || split). rewrite <-RS. kat.
 Qed.
+*)
 
 (** [partition equiv X] splits [X] into the set of sets [Xi] that are
 each included in an equivalence class of the relation [equiv] *)
 
-(* check with Luc if partition filters out the empty sets? *)
+(* In fact, partition do filters out the empty sets. *)
 
 Definition partition {A} (equiv : relation A) (X : Ensemble A)
   : Ensemble (Ensemble A)
   := subset_image (Intersection _ X) (equivalence_classes equiv).
+
+(** This is the code for classes_loc that is indroduced by the cat2coq
+translation. The following lemma is the glue between the two notions
+but in fact there are several gaps, [classes_loc E F] implies
+[classes_loc E F'] for every F' included in F  *)
+Definition classes_loc {c} : set (events c) -> Ensemble (Ensemble (events c)) :=
+  fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc c x y.
+Lemma classes_loc_partition {c} : @classes_loc c = partition (loc c).
+Proof.
+  apply functional_extensionality; intros E.
+  apply functional_extensionality; intros F.
+  apply propositional_extensionality; split.
+  - admit.
+  - intros (G & (x & Gx & xG) & ->).
+    split.
+    + intros y_ [y e g]. apply e.
+    + intros y_ z_ [y ey gy] [z ez gz].
+      apply xG in gy.
+      apply xG in gz.
+      eapply (loc_trans c). apply loc_sym; eauto. eauto.
+Abort.
 
 Lemma partition_spec {c} (E : Ensemble (events c)) (E' : Ensemble (events c)) :
   partition (loc c) E E' <-> exists l, E' ≡ atloc l ⊓ E.
@@ -195,9 +217,6 @@ Qed.
 (*   : Ensemble (Ensemble A) *)
 (*   := fun Xi => (forall x, Xi x -> X x) /\ forall x y, Xi x -> Xi y -> equiv x y. *)
 
-Definition union_of_relations {A} : Ensemble (relation A) -> relation A :=
-  fun Rs x y => exists R, Rs R /\ R x y.
-
 Lemma union_of_relations_leq {A} Rs (S : relation A) :
   union_of_relations Rs ≦ S <-> forall R, Rs R -> R ≦ S.
 Proof.
@@ -211,6 +230,8 @@ Definition co_locs {A} (R : relation A) (sets : Ensemble (Ensemble A))
   : Ensemble (Ensemble (relation A))
   := subset_image (fun E => linearisations E R) sets.
 
+(* TODO remove the definition above -- as long as the lemma below is
+proved, the rest of this file (and probably all the repo) will work *)
 Lemma co_locs_partition_spec {c} R E S :
   co_locs R (partition (loc c) E) S <-> exists l, S = linearisations (E ⊓ atloc l) R.
 Proof.
@@ -226,32 +247,15 @@ Proof.
     rewrite partition_spec. eauto. exists l. now rewrite capC.
 Qed.
 
+(*
 Definition cross {A} (S : Ensemble (Ensemble (relation A)))
   : Ensemble (relation A)
   := subset_image union_of_relations (one_of_each S).
+*)
 
 Definition generate_orders A (loc : relation A) (s : set A) (pco : relation A)
   : Ensemble (relation A)
   := cross (co_locs pco (partition loc s)).
-
-Lemma tst_dot {A} (R : relation A) E x y : ([E] ⋅ R) x y <-> E x /\ R x y.
-Proof.
-  split.
-  - intros [x_ [<- e] r]. intuition.
-  - exists x; firstorder.
-Qed.
-
-Lemma dot_tst {A} (R : relation A) E x y : (R ⋅ [E]) x y <-> R x y /\ E y.
-  split.
-  - intros [y_ r [<- e]]. intuition.
-  - exists y; firstorder.
-Qed.
-
-Lemma tst_dot_tst {A} (R : relation A) E E' x y :
-  ([E] ⋅ R ⋅ [E']) x y <-> E x /\ R x y /\ E' y.
-Proof.
-  now rewrite dot_tst, tst_dot.
-Qed.
 
 (* alternate specification for [generate_orders E R S], that is, [S]
 must relate any two [R]-related [E] events at the same location, and
@@ -280,7 +284,7 @@ Proof.
         subst l. symmetry. now apply location_of_spec.
     + apply union_of_relations_leq.
       intros S (Rl & (l & ->) % co_locs_partition_spec & RS). apply f_sound in RS.
-      destruct RS as ((_ & -> & _) & _).
+      destruct RS as (_ & e & _ & _). rewrite e.
       intros x y.
       rewrite tst_dot_tst.
       intros ((_, ?) & _ & (_, ?)).
@@ -289,8 +293,8 @@ Proof.
     + intros l; split; split.
       * unfold relalg.is_irreflexive. apply antisym; [ | ka ].
         assert ([atloc l] ≦ 1) as -> by kat. ra_normalise.
-        intros x y [(S & (R' & (l' & ->) % co_locs_partition_spec
-                       & (((SI & _) & _) & RS) % f_sound) & xx) <-].
+        intros x y [(S, ((R' & (aa & bb & ->)
+                          & ((ST, SI) & Sdom & Stot & RS) % f_sound), xx)) <-].
         apply SI. split; easy.
       * unfold is_transitive.
         intros x z [y xy yz].
@@ -304,8 +308,8 @@ Proof.
         destruct yz as (U & (R' & (l'' & ->) % co_locs_partition_spec & fRU) & yz).
         split; auto. split; auto.
         exists S. split. eexists. split; eauto. apply co_locs_partition_spec; eauto.
-        destruct (f_sound _ _ fRT) as (((TI & TT) & TE & ET) & RT).
-        destruct (f_sound _ _ fRU) as (((UI & TU) & UE & EU) & RU).
+        destruct (f_sound _ _ fRT) as ((TT & TI) & TE & ET & RT).
+        destruct (f_sound _ _ fRU) as ((TU & UI) & UE & EU & RU).
         assert (l' = location_of x /\ l' = location_of y) as [].
         { (* TODO automate this *)
           apply TE in xy. destruct xy as [? [? [<- [_ ?]]] [-> [_ ?]]]. easy. }
@@ -320,18 +324,19 @@ Proof.
       * intros x y xy.
         rewrite tst_dot_tst in xy. destruct xy as (lx & xy & ly).
         destruct xy as (S & (qdw & (l' & ->) % co_locs_partition_spec
-                          & ((OS & SE & ES) & RS) % f_sound) & xy).
+                          & (OS & SE & ES & RS) % f_sound) & xy).
         apply SE in xy.
         rewrite tst_dot_tst in xy. destruct xy as ((Ex, l'x) & _ & (Ey, l'y)).
         assert (l = l') as <- by now rewrite <-lx, <-l'x.
         rewrite tst_dot_tst. easy.
-      * elim_cnv. ra_normalise.
+      * unfold total_on.
+        elim_cnv. ra_normalise.
         intros x y xy.
         pose proof xy as xy'.
         rewrite tst_dot_tst in xy. destruct xy as ((l'x, Ex) & _ & (l'y, Ey)).
         specialize (f_tot (linearisations (E ⊓ atloc l) R)). apply proj1 in f_tot.
         destruct f_tot as [S fRS]; [ now apply co_locs_partition_spec; eauto | ].
-        destruct (f_sound _ _ fRS) as (((SI & ST) & SE & ES) & RS).
+        destruct (f_sound _ _ fRS) as ((SI & ST) & SE & ES & RS).
         destruct (ES x y) as [xy | yx]. now auto.
         -- left.
            rewrite tst_dot_tst.
@@ -361,7 +366,8 @@ Proof.
                      fRs = [atloc l] ⋅ S ⋅ [atloc l]).
       exists f. split. 2:split. 2:split.
       * (* f is a _sound_ choice function *)
-        intros Rs fRs. subst f. intros (l & -> & ->). split. auto.
+        intros Rs fRs. subst f. intros (l & -> & ->). split!; apply ?(ES l).
+        now apply is_irreflexive_spec2, (ES l).
         rewrite <-RS.
         intros x y xy.
         rewrite tst_dot_tst in *.
@@ -381,12 +387,13 @@ Proof.
         pose proof ES l1 as Sl1.
         pose proof ES l2 as Sl2.
         assert (HS : linearisations (E ⊓ atloc l1) R ([atloc l1]⋅S⋅[atloc l1])).
-        { split. auto. rewrite <-RS.
+        { split!; apply ?(ES l1). apply is_irreflexive_spec2, (ES l1).
+          rewrite <-RS.
           intros x y ((ex & x2) & xy & (ey & y2)) % tst_dot_tst.
           rewrite tst_dot_tst. intuition. split; auto.
           rewrite tst_dot_tst. intuition. apply location_of_spec. congruence.
         }
-        rewrite <-e1, e2 in HS. destruct HS as ((OS & S12 & dq__) & qdw__).
+        rewrite <-e1, e2 in HS. destruct HS as (OS & S12 & _ & _).
         intros x y xy.
         pose proof (S12 _ _ xy) as ((_ & x2) & _ & (_ & y2)) % tst_dot_tst.
         rewrite tst_dot_tst in *.
@@ -407,7 +414,7 @@ Proof.
   intros x y (ex & xy & ey) % tst_dot_tst.
   destruct (SO (location_of x)) as (A & B & C).
   destruct (Classical_Prop.classic (x = y)) as [<- | n]. now right. left.
-  elim_cnv in C. rewrite dotA in C.
+  unfold total_on in C. elim_cnv in C. rewrite dotA in C.
   destruct (C x y) as [H|H].
   - rewrite tst_dot_tst. repeat split; auto. symmetry. now apply location_of_spec.
   - left. now rewrite tst_dot_tst in H.

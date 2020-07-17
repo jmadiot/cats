@@ -12,6 +12,7 @@ lib/list.v
 lib/oneofeach.v
 lib/proprel_classic.v
 lib/proprel.v
+lib/relalglaws.v
 lib/tactics.v
 lib/uniproc.v
 models/aarch64fences.v

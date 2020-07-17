@@ -1,7 +1,6 @@
 From Coq Require Import String Ensembles Sorted Mergesort Permutation.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import defs proprel tactics.
-(* From Catincoq.lib Require Import defs proprel Cat tactics oneofeach acyclic. *)
+From Catincoq.lib Require Import defs proprel tactics relalglaws.
 From CoLoR Require Util.Relation.Total. Arguments exist [A] _ _ _. Arguments existT [A] _ _ _.
 
 Lemma partial_order_of_strict_order {A} (R : relation A) : strict_order R -> partial_order (R ⊔ 1).
@@ -21,6 +20,10 @@ Proof.
   - firstorder.
     (* TODO understand why firstorder fails if we don't Require CoLoR.Util.Relation.Total *)
 Qed.
+
+(* Instead of finiteness, it is also possible to use the axiom of
+choice (or the weaker axiom "boolean ideal prime theorem")
+https://proofwiki.org/wiki/Order-Extension_Principle *)
 
 Lemma every_strict_order_can_be_total_on_aux {A} (E : set A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->

@@ -1,5 +1,5 @@
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import defs proprel Cat tactics.
+From Catincoq.lib Require Import proprel defs Cat tactics relalglaws.
 
 Instance is_empty_leq A : Proper (leq --> impl) (is_empty : relation A -> _).
 Proof.
@@ -50,20 +50,6 @@ Qed.
 Instance acyclic_weq_ A : Proper (weq --> iff) (@acyclic A).
 Proof.
   intros R S H. split; apply acyclic_leq; compute in *; apply H.
-Qed.
-
-Lemma cap_cartes {X} (R : relation X) (a b : set X) : R ⊓ ([a] ⋅ top ⋅ [b]) ≡ [a] ⋅ R ⋅ [b].
-Proof.
-  destruct_rel.
-  exists y; hnf; auto. exists x; hnf; auto.
-  split; auto. exists y; hnf; auto. exists x; split; auto.
-Qed.
-
-Lemma cap_cartes_l {X} (R : relation X) (a b : set X) : ([a] ⋅ top ⋅ [b]) ⊓ R ≡ [a] ⋅ R ⋅ [b].
-Proof.
-  destruct_rel.
-  exists y; hnf; auto. exists x; hnf; auto.
-  split; auto. exists y; hnf; auto. exists x; split; auto.
 Qed.
 
 Lemma irreflexive_spec {X} (R : relation X) : irreflexive R <-> forall x, ~ R x x.
@@ -133,30 +119,6 @@ Proof.
       apply irreflexive_leq with ((R⋅S)^+); auto.
       rewrite <-(itr_transitive TS).
       ka.
-Qed.
-
-Definition is_irreflexive {X} (R : relation X) := R ⊓ 1 ≦ 0.
-
-Lemma is_irreflexive_spec1 {X} (R : relation X) : irreflexive R <-> is_irreflexive R.
-Proof.
-  reflexivity.
-Qed.
-
-Lemma is_irreflexive_spec2 {X} (R : relation X) : relalg.is_irreflexive R <-> is_irreflexive R.
-Proof.
-  compute. firstorder (subst; firstorder).
-Qed.
-
-Lemma is_irreflexive_spec3 {X} (R : relation X) : RelationClasses.Irreflexive R <-> is_irreflexive R.
-Proof.
-  compute. firstorder (subst; firstorder).
-Qed.
-
-Definition is_acyclic {X} (R : relation X) := R^+ ⊓ 1 ≦ 0.
-
-Lemma is_acyclic_spec {X} (R : relation X) : acyclic R <-> is_acyclic R.
-Proof.
-  split; intros A x y; specialize (A x y); rewrite A; compute; tauto.
 Qed.
 
 Lemma acyclic_itr {X} (R : relation X) : acyclic (R^+) <-> acyclic R.

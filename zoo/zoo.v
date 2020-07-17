@@ -1,62 +1,11 @@
 From Coq Require Import String Ensembles Sorted Mergesort Permutation Classical_Prop.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From AAC_tactics Require Import AAC.
-From CoLoR Require Util.Relation.Total.
-From Catincoq.lib Require Import defs proprel Cat acyclic co linearext tactics.
-(* From Catincoq.lib Require aac_ra. *)
-
-Open Scope string_scope.
+From Catincoq.lib Require Import defs proprel Cat acyclic co linearext tactics relalglaws.
 From Catincoq.models Require rc11 sc.
 From Catincoq.zoo Require sc_nosm tso_nosm lamport.
+From Catincoq.zoo Require x86tso. (* NOT the one in models/, since we need MFENCE to be defined: *)
 
-(* Not the one in models/, since we need MFENCE to be defined: *)
-From Catincoq.zoo Require x86tso.
-
-Lemma dotcap1l (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
-  forall (n : ob X) (x y z : X n n),
-    x ≦ 1 -> x⋅(y ⊓ z) ≡ x⋅y ⊓ z.
-Proof.
-  intros n x y z Hx.
-  apply antisym.
-  - rewrite dotxcap. rewrite Hx at 2. ra.
-  - rewrite capdotx. rewrite Hx at 2. ra.
-Qed.
-
-Lemma dotcap1r (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
-  forall (n : ob X) (x y z : X n n),
-    x ≦ 1 -> (y ⊓ z) ⋅ x ≡ y ⋅ x ⊓ z.
-Proof.
-  intros n x y z Hx.
-  apply antisym.
-  - rewrite dotcapx. rewrite Hx at 2. ra.
-  - rewrite capxdot. rewrite Hx at 1. ra.
-Qed.
-
-Lemma dotcap1 (l : level) (X : ops) {H : laws l X} {Hl : AL ≪ l} :
-  forall (n : ob X) (u1 u2 x y : X n n),
-    u1 ≦ 1 -> u2 ≦ 1 -> u1 ⋅ (x ⊓ y) ⋅ u2 ≡ u1 ⋅ x ⋅ u2 ⊓ y.
-Proof.
-  intros n u1 u2 x y H1 H2.
-  rewrite dotcap1l, dotcap1r; eauto.
-Qed.
-
-Lemma dotcap1l_rel {X} (x y z : relation X) :
-  x ≦ 1 -> x⋅(y ⊓ z) ≡ x⋅y ⊓ z.
-Proof.
-  eapply dotcap1l. 2:reflexivity. apply lower_laws.
-Qed.
-
-Lemma dotcap1r_rel {X} (x y z : relation X) :
-  x ≦ 1 -> (y ⊓ z) ⋅ x ≡ y ⋅ x ⊓ z.
-Proof.
-  eapply dotcap1r. 2:reflexivity. apply lower_laws.
-Qed.
-
-Lemma dotcap1_rel {X} (u1 u2 x y : relation X) :
-  u1 ≦ 1 -> u2 ≦ 1 -> u1 ⋅ (x ⊓ y) ⋅ u2 ≡ u1 ⋅ x ⋅ u2 ⊓ y.
-Proof.
-  eapply dotcap1. 2:reflexivity. apply lower_laws.
-Qed.
+Open Scope string_scope.
 
 Ltac destr :=
   match goal with
@@ -74,15 +23,6 @@ Definition in_at {A} (l : list A) : nat -> A -> Prop :=
 Definition in_before {A} (l : list A) : A -> A -> Prop :=
   fun x y => x = y \/ exists n, exists m, n <= m /\ in_at l n x /\ in_at l m y.
 
-(* Instead of finiteness, it is also possible to use the axiom of
-choice (or the weaker axiom "boolean ideal prime theorem")
-https://proofwiki.org/wiki/Order-Extension_Principle *)
-
-Lemma cnvtst {A} {E : set A} : [E]° ≡ [E].
-Proof.
-  intros a b; split; intros [-> Ha]; constructor; auto.
-Qed.
-
 (** Cat idiom for inclusion *)
 Lemma is_empty_included {A} (R S : relation A) : is_empty (R ⊓ !S) <-> R ≦ S.
 Proof.
@@ -95,7 +35,7 @@ Qed.
 Instance linearisations_weq_ (A : Type) :
   Proper (weq --> weq --> weq --> iff) (Cat.linearisations : set A -> relation A -> set (relation A)).
 Proof.
-  unfold Cat.linearisations, Cat.strict_total_order_on, Proper, respectful, flip.
+  unfold Cat.linearisations, linear_extension_on, strict_total_order_on, strict_order, total_on, Proper, respectful, flip.
   intros ? ? e1 ? ? e2 ? ? e3.
   rewrite ?e1, ?e2, ?e3; tauto.
 Qed.
@@ -251,8 +191,6 @@ Proof.
   ka.
 Qed.
 
-From Catincoq.models Require sc.
-
 Lemma sc_lamport c
       (no_atomic : rmw c ≡ bot)
       (no_mixed_size : unknown_relation c "sm" ≡ 1) :
@@ -274,7 +212,7 @@ Proof.
   - (** Suppose we have a "sc.cat" execution, with a generated co *)
     intros (co & Hco & atomic & sc).
     rewrite no_mixed_size, dotx1 in sc. clear no_mixed_size no_atomic.
-    replace @Cat.cross with @cross in Hco by admit.
+    change @Cat.cross with @cross in Hco.
     replace @Cat.co_locs with @co_locs in Hco by admit.
     replace (fun Si : Ensemble events =>
               (forall x : events, Si x -> Ensemble_of_dpset W x) /\ (forall x y : events, Si x -> Si y -> loc x y))
@@ -332,14 +270,14 @@ Proof.
     exists S'.
     repeat apply conj; try rewrite is_empty_included.
     (** S is indeed a "linearisation" *)
-    + (* irreflexive *)
-      unfold S'. destruct_rel. apply Sirr. split. auto. reflexivity.
     + (* transitive *)
       unfold S'. transitivity ([!IW] ⋅ (S ⋅ S) ⋅ [!IW]).
       kat. rewrite St. auto.
+    + (* irreflexive *)
+      unfold S'. destruct_rel. apply Sirr. split. auto. reflexivity.
     + (* domain/range *)
-      unfold S'. kat.
-    + (* totality *) unfold S'. rewrite 2cnvdot, cnvtst, dotA.
+      unfold S'. ra.
+    + (* totality *) unfold S', total_on. rewrite 2cnvdot, cnvtst, dotA.
       transitivity ([!IW] ⋅ (S ⊔ S°) ⋅ [!IW]). 2:ka. unfold total_on in Stot.
       rewrite <-Stot.
       kat.
@@ -472,7 +410,7 @@ Proof.
     total relation, we build a sc.cat execution, and in particular the
     co between writes, which is S restricted to pairs of writes on the
     same variable, with some detail accounting to initial variables *)
-    intros (S & [(Sirr & St & Sdom & Stot) Sincl] & Spo & Srf & rfS).
+    intros (S & ((Sirr, St) & Sdom & Stot & Sincl) & Spo & Srf & rfS).
     rewrite is_empty_included in Srf, rfS, Spo.
     pose proof antisym _ _ Srf rfS as S_rf. clear Srf rfS.
     rewrite cap_cartes in S_rf.
@@ -545,6 +483,7 @@ Proof.
           repeat apply join_leq.
           - rewrite dotcap1_rel; try kat.
             assert ([W ⊓ !IW]⋅!1⋅[W ⊓ !IW] ≡ [W]⋅([!IW]⋅!1⋅[!IW])⋅[W]) as -> by kat.
+            unfold total_on in Stot.
             rewrite Stot.
             destruct_rel.
             + left. t. apply itr_ext'. left. t.
@@ -602,6 +541,7 @@ Proof.
              t.
              - rewrite S_rf in rw1.
                destruct_rel.
+               apply dom_rng_char in Sdom.
                assert (([!IW]⋅S⋅[!IW]) w1 r) by now apply Sdom.
                + type.
                + type.
@@ -624,12 +564,14 @@ Proof.
               ** (** First part of the path: co w1 w2 *)
                  destruct (classic (IW w1)) as [w1i | w1ni].
                  (* w1 initial *)
-                 { subst co. right. t. now destruct_rel. type. right; type. }
+                 { subst co. right. apply domrng_char in Sdom.
+                   t. now destruct_rel. right; type. }
                  (* w1 not initial *)
                  assert (a: ([!IW] ⋅ co) w1 w2) by t.
                  left. cut ([!IW]⋅co ≦ S). intros H; now apply H.
                  subst co S_.
                  assert (S^+ ≡ S) as <- by now apply itr_transitive.
+                 apply domrng_char in Sdom.
                  rewrite Sdom at 1.
                  rewrite leq_cap_l.
                  kat.
@@ -749,17 +691,6 @@ Proof.
     rewrite !cap_cartes.
     unfold empty.
     hkat.
-Qed.
-
-Lemma cnv_inj (l : level) (X : kat.ops) {_ : kat.laws X} {_ : laws l X} {_ : CNV ≪ l} :
-  forall (n : ob X) (a : tst n), [a]° ≡ [a].
-Proof.
-Abort (* not provable? *).
-
-Lemma cnv_inj {X} (a : set X) : [a]° ≡ [a].
-Proof.
-  compute.
-  intros x y. split; intros [? ?]; subst y; firstorder.
 Qed.
 
 Lemma tso_nosm_stronger_than_x86tso c :

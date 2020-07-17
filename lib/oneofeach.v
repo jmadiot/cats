@@ -1,24 +1,11 @@
 From Coq Require Import Ensembles List.
-From Catincoq.lib Require Import tactics list.
+From Catincoq.lib Require Import tactics list defs.
 
-(** This file describes the function one_of_each : P(P(X)) -> P(P(X))
-which, given a set of sets S1..Sn, returns the set of sets {e1..en}
-such that ei is in Si. The formal definition is not obviously right,
-so we prove the equivalence with the analog function on lists:
-list_list_prod *)
-
-Definition relational_image {A B} (R : A -> B -> Prop) : Ensemble A -> Ensemble B :=
-  fun x b => exists a, x a /\ R a b.
-
-Definition functional_relation_domain {A B} (dom : Ensemble A) (R : A -> B -> Prop) :=
-  (forall a, dom a <-> exists b, R a b) /\
-  (forall a b b', R a b -> R a b' -> b = b').
-
-Definition one_of_each {X} : Ensemble (Ensemble X) -> Ensemble (Ensemble X) :=
-  fun A b => exists f : Ensemble X -> X -> Prop,
-      (forall e fe, f e fe -> e fe) /\
-      functional_relation_domain A f /\
-      Same_set _ b (relational_image f A).
+(** This file describes the function one_of_each : P(P(X)) -> P(P(X)),
+defined in defs.v, which, given a set of sets S1..Sn, returns the set
+of sets {e1..en} such that ei is in Si. The formal definition is not
+obviously right, so we prove the equivalence with the analog function
+on lists: list_list_prod *)
 
 Lemma list_fun_rel_dom {A B} (dom : Ensemble A) (R : A -> B -> Prop) :
   functional_relation_domain dom R ->
