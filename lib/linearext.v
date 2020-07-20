@@ -25,7 +25,9 @@ Qed.
 choice (or the weaker axiom "boolean ideal prime theorem")
 https://proofwiki.org/wiki/Order-Extension_Principle *)
 
-Lemma every_strict_order_can_be_total_on_aux {A} (E : set A) (R : relation A) :
+(* TODO: replace Set with Type below when CoLoR has merged the PR *)
+
+Lemma every_strict_order_can_be_total_on_aux {A : Set} (E : set A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
   finite_set E ->
@@ -52,7 +54,7 @@ Proof.
   - intros x y. destruct_rel. apply I. firstorder.
 Qed.
 
-Lemma every_strict_order_can_be_total_on {A} (E : set A) (R : relation A) :
+Lemma every_strict_order_can_be_total_on {A : Set} (E : set A) (R : relation A) :
   (forall x y : A, R x y \/ ~R x y) ->
   (forall x y : A, x = y \/ x <> y) ->
   finite_set E ->
@@ -74,7 +76,7 @@ Proof.
   - rewrite <-RS. kat.
 Qed.
 
-Lemma every_order_can_be_total_on {A} (E : set A) (R : relation A) :
+Lemma every_order_can_be_total_on {A : Set} (E : set A) (R : relation A) :
   partial_order R ->
   finite_set E ->
   (forall x y, R x y \/ ~R x y) ->

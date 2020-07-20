@@ -25,8 +25,9 @@ Proof.
   apply propositional_extensionality.
 Qed.
 
-Lemma set_ext {A} (E E' : set A) : E ≡ E' -> E = E'.
+Lemma set_ext {A} (E E' : set A) : E ≡ E' <-> E = E'.
 Proof.
+  split. 2:intros ->; auto.
   intros e.
   apply functional_extensionality; intros x.
   apply propositional_extensionality, e.
@@ -41,6 +42,16 @@ Lemma set_weq {A} (E E' : set A) :
   (forall a, E a <-> E' a) -> E ≡ E'.
 Proof.
   firstorder.
+Qed.
+
+Instance Inhabited_leq A : Proper (flip leq --> impl) (Inhabited A).
+Proof.
+  compute. firstorder.
+Qed.
+
+Instance Inhabited_weq A : Proper (weq --> iff) (Inhabited A).
+Proof.
+  compute. firstorder.
 Qed.
 
 (** TODO remove this def *)
@@ -165,18 +176,19 @@ Qed.
 *)
 
 (** [partition equiv X] splits [X] into the set of sets [Xi] that are
-each included in an equivalence class of the relation [equiv] *)
+each included in an equivalence class of the relation [equiv]. It also
+filters out empty sets, which we implement below with Inhabited *)
 
-(* In fact, partition do filters out the empty sets. *)
-
-Definition partition {A} (equiv : relation A) (X : Ensemble A)
-  : Ensemble (Ensemble A)
-  := subset_image (Intersection _ X) (equivalence_classes equiv).
+Definition partition {A} (equiv : relation A) (E F : Ensemble A) : Prop :=
+  Inhabited _ F /\
+  exists C, equivalence_classes equiv C /\ F = Intersection _ E C.
 
 (** This is the code for classes_loc that is indroduced by the cat2coq
 translation. The following lemma is the glue between the two notions
 but in fact there are several gaps, [classes_loc E F] implies
-[classes_loc E F'] for every F' included in F  *)
+[classes_loc E F'] for every F' included in F -- this will be useless
+in time since we will replace [classes_loc] with [partition] in
+cat2coq *)
 Definition classes_loc {c} : set (events c) -> Ensemble (Ensemble (events c)) :=
   fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc c x y.
 Lemma classes_loc_partition {c} : @classes_loc c = partition (loc c).
@@ -185,26 +197,27 @@ Proof.
   apply functional_extensionality; intros F.
   apply propositional_extensionality; split.
   - admit.
-  - intros (G & (x & Gx & xG) & ->).
+  - intros (i & G & (x & Gx & xG) & ->).
+    destruct i as (_ & [y Ey Gy]).
     split.
-    + intros y_ [y e g]. apply e.
-    + intros y_ z_ [y ey gy] [z ez gz].
-      apply xG in gy.
+    + intros _ [z e g]. apply e.
+    + intros _ _ [z ez gz] [t et gt].
       apply xG in gz.
+      apply xG in gt.
       eapply (loc_trans c). apply loc_sym; eauto. eauto.
 Abort.
 
 Lemma partition_spec {c} (E : Ensemble (events c)) (E' : Ensemble (events c)) :
-  partition (loc c) E E' <-> exists l, E' ≡ atloc l ⊓ E.
+  partition (loc c) E E' <-> Inhabited _ E' /\ exists l, E' ≡ atloc l ⊓ E.
 Proof.
   split.
-  - intros (C & Ceq & ->).
+  - intros (i & C & Ceq & ->). split; auto.
     destruct Ceq as (x & Cx & xC).
     exists (location_of x).
     rewrite to_set_cap.
     enough (C ≡ atloc (location_of x)) as ->. now apply capC.
     apply set_weq. simpl. intros y. now rewrite <-xC, <-location_of_spec.
-  - intros (l, e). eexists (atloc l). split.
+  - intros (i & l & e). split; auto. eexists (atloc l). split.
     + destruct (location_of_surj l) as (x, <-). exists x. split. easy.
       intros y. rewrite <-location_of_spec. easy.
     + apply Extensionality_Ensembles'; split.
@@ -233,18 +246,22 @@ Definition co_locs {A} (R : relation A) (sets : Ensemble (Ensemble A))
 (* TODO remove the definition above -- as long as the lemma below is
 proved, the rest of this file (and probably all the repo) will work *)
 Lemma co_locs_partition_spec {c} R E S :
-  co_locs R (partition (loc c) E) S <-> exists l, S = linearisations (E ⊓ atloc l) R.
+  co_locs R (partition (loc c) E) S <->
+  exists l, Inhabited _ (E ⊓ atloc l) /\ S = linearisations (E ⊓ atloc l) R.
 Proof.
   split.
-  - intros (E' & (C & (x & Cx & xC) & ->) & ->). exists (location_of x). f_equal.
-    apply set_ext. rewrite to_set_cap.
-    enough (C ≡ atloc (location_of x)) as ->; auto.
+  - intros (E' & (i & C & (x & Cx & xC) & ->) & ->).
+    exists (location_of x).
+    enough (Intersection (events c) E C = E ⊓ atloc (location_of x)) as <-; auto.
+    apply set_ext.
+    rewrite to_set_cap, set_ext. f_equal. apply set_ext.
     intros a. rewrite <-xC, <-location_of_spec. unfold atloc. split; auto.
-  - intros (l & ->).
+  - intros (l & i & ->).
     unfold co_locs, subset_image.
     set (x := (E ⊓ atloc l)). exists x. subst x.
     split; auto.
-    rewrite partition_spec. eauto. exists l. now rewrite capC.
+    rewrite partition_spec. split; auto.
+    exists l. now rewrite capC.
 Qed.
 
 (*
@@ -260,6 +277,36 @@ Definition generate_orders A (loc : relation A) (s : set A) (pco : relation A)
 (* alternate specification for [generate_orders E R S], that is, [S]
 must relate any two [R]-related [E] events at the same location, and
 be a linearisation of [E] on each location *)
+
+Lemma co_locs_located {c} R (E : set _) x (Ex : E x) :
+  co_locs R (partition (loc c) E) (linearisations (E ⊓ atloc (location_of x)) R).
+Proof.
+  apply co_locs_partition_spec; eexists; split; [ | easy ].
+  exists x; easy.
+Qed.
+
+(* TODO when done, maybe remve: *)
+Lemma co_locs_colocated {c} R (E : set _) x y (Ey : E y) (xy : loc c x y) :
+  co_locs R (partition (loc c) E) (linearisations (E ⊓ atloc (location_of x)) R).
+Proof.
+  apply co_locs_partition_spec; eexists; split; [ | easy ].
+  exists y; split; auto. apply location_of_spec, loc_sym, xy.
+Qed.
+
+Lemma co_locs_atloc {c} R (E : set _) l x (Ex : E x) (lx : atloc l x) :
+  co_locs R (partition (loc c) E) (linearisations (E ⊓ atloc l) R).
+Proof.
+  apply co_locs_partition_spec; eexists; split; [ | easy ].
+  exists x; easy.
+Qed.
+
+Lemma co_locs_inhabited {c} R (E : set _) x :
+  Inhabited (events c) (E ⊓ atloc (location_of x)) ->
+  co_locs R (partition (loc c) E) (linearisations (E ⊓ atloc (location_of x)) R).
+Proof.
+  intro i.
+  apply co_locs_partition_spec; eauto.
+Qed.
 
 Lemma generate_orders_spec_3 {c} E (R S : relation (events c)) :
   generate_orders (events c) (loc c) E R S <->
@@ -277,37 +324,39 @@ Proof.
       pose (l := location_of x).
       (* pose (R' := ([E ⊓ atloc l] ⋅ R ⋅ [E ⊓ atloc l])). *)
       specialize (f_tot (linearisations (E ⊓ atloc l) R)). apply proj1 in f_tot.
-      destruct f_tot as [S RS]; [ now apply co_locs_partition_spec; eauto | ].
-      exists S. split. eexists. split; eauto. apply co_locs_partition_spec; eauto.
-      apply f_sound in RS. destruct RS as [_ RS]. apply RS.
+      destruct f_tot as [S RS]. now apply co_locs_located.
+      exists S. split. eexists. split; eauto. now apply co_locs_located.
+      apply f_sound in RS. destruct RS as (_ & _ & _ & RS). apply RS.
       * exists y; auto. exists x; auto. repeat (split; auto). repeat (split; auto). simpl.
         subst l. symmetry. now apply location_of_spec.
     + apply union_of_relations_leq.
-      intros S (Rl & (l & ->) % co_locs_partition_spec & RS). apply f_sound in RS.
+      intros S (Rl & (l & i & ->) % co_locs_partition_spec & RS). apply f_sound in RS.
       destruct RS as (_ & e & _ & _). rewrite e.
       intros x y.
       rewrite tst_dot_tst.
       intros ((_, ?) & _ & (_, ?)).
       apply location_of_spec.
       congruence.
-    + intros l; split; split.
-      * unfold relalg.is_irreflexive. apply antisym; [ | ka ].
+    + (* Let us prove that this union of relation is a strict total
+         order for each location*)
+      intros l; split; split.
+      * (* irreflexivity *)
+        unfold relalg.is_irreflexive. apply antisym; [ | ka ].
         assert ([atloc l] ≦ 1) as -> by kat. ra_normalise.
         intros x y [(S, ((R' & (aa & bb & ->)
                           & ((ST, SI) & Sdom & Stot & RS) % f_sound), xx)) <-].
         apply SI. split; easy.
-      * unfold is_transitive.
+      * (* transitivity *)
+        unfold is_transitive.
         intros x z [y xy yz].
         specialize (f_tot (linearisations (E ⊓ atloc (location_of x)) R)).
         apply proj1 in f_tot.
-        destruct f_tot as [S fRS]; [ now apply co_locs_partition_spec; eauto | ].
         rewrite tst_dot_tst in *.
         destruct xy as (lx & xy & ly).
         destruct yz as (_  & yz & lz).
-        destruct xy as (T & (R' & (l' & ->) % co_locs_partition_spec & fRT) & xy).
-        destruct yz as (U & (R' & (l'' & ->) % co_locs_partition_spec & fRU) & yz).
+        destruct xy as (T & (R' & (l' & i & ->) % co_locs_partition_spec & fRT) & xy).
+        destruct yz as (U & (R' & (l'' & i' & ->) % co_locs_partition_spec & fRU) & yz).
         split; auto. split; auto.
-        exists S. split. eexists. split; eauto. apply co_locs_partition_spec; eauto.
         destruct (f_sound _ _ fRT) as ((TT & TI) & TE & ET & RT).
         destruct (f_sound _ _ fRU) as ((TU & UI) & UE & EU & RU).
         assert (l' = location_of x /\ l' = location_of y) as [].
@@ -318,24 +367,26 @@ Proof.
           apply UE in yz. destruct yz as [? [? [<- [_ ?]]] [-> [_ ?]]]. easy. }
         subst l' l''.
         replace (location_of y) with (location_of x) in fRU.
-        assert (T = S) by now eapply f_fun; eauto. subst T.
-        assert (U = S) by now eapply f_fun; eauto. subst U.
-        apply TT. exists y; eauto.
-      * intros x y xy.
+        assert (T = U) by now eapply f_fun; eauto. subst T.
+        exists U. split. 2: now apply TU; exists y; auto.
+        eexists. split; eauto. now apply co_locs_inhabited.
+      * (* domain/range are in [E] *)
+        intros x y xy.
         rewrite tst_dot_tst in xy. destruct xy as (lx & xy & ly).
-        destruct xy as (S & (qdw & (l' & ->) % co_locs_partition_spec
+        destruct xy as (S & (qdw & (l' & i & ->) % co_locs_partition_spec
                           & (OS & SE & ES & RS) % f_sound) & xy).
         apply SE in xy.
         rewrite tst_dot_tst in xy. destruct xy as ((Ex, l'x) & _ & (Ey, l'y)).
         assert (l = l') as <- by now rewrite <-lx, <-l'x.
         rewrite tst_dot_tst. easy.
-      * unfold total_on.
+      * (* totality on [E ⊓ atloc l] *)
+        unfold total_on.
         elim_cnv. ra_normalise.
         intros x y xy.
         pose proof xy as xy'.
         rewrite tst_dot_tst in xy. destruct xy as ((l'x, Ex) & _ & (l'y, Ey)).
         specialize (f_tot (linearisations (E ⊓ atloc l) R)). apply proj1 in f_tot.
-        destruct f_tot as [S fRS]; [ now apply co_locs_partition_spec; eauto | ].
+        destruct f_tot as [S fRS]. now eapply co_locs_atloc; eauto.
         destruct (f_sound _ _ fRS) as ((SI & ST) & SE & ES & RS).
         destruct (ES x y) as [xy | yx]. now auto.
         -- left.
@@ -343,30 +394,53 @@ Proof.
            intuition.
            exists S; intuition.
            eexists; split; eauto.
-           apply co_locs_partition_spec. eauto.
+           now eapply co_locs_atloc; eauto.
         -- right.
            rewrite tst_dot_tst.
            intuition.
            exists S; intuition.
            eexists; split; eauto.
-           apply co_locs_partition_spec. eauto.
-  - intros (RS & Sloc & ES).
-    exists (fun Sl : relation _ => exists l, Sl = [atloc l]⋅S⋅[atloc l]).
+           now eapply co_locs_atloc; eauto.
+  - (* suppose [S] covers [R ⊓ loc] on [E], that [S ≦ loc] and that it
+       is a strict total order on each location. We show it satisfies
+       [generate_orders] *)
+    intros (RS & Sloc & ES).
+    assert (Slocx : forall x y l,
+               S x y -> l = location_of x ->
+               ([E ⊓ atloc l] ⋅ S ⋅ [E ⊓ atloc l]) x y).
+    { intros x y l xy ->. destruct (ES (location_of x)) as (_ & SE & _).
+      spec SE x y. hnf in SE. spec SE.
+      - rewrite tst_dot_tst; intuition. reflexivity.
+        apply location_of_spec, loc_sym, Sloc, xy.
+      - rewrite tst_dot_tst in *. tauto. }
+    (* [S] is the union of all its restrictions to a location... that
+       are not empty (this is necessary since [partition] excludes
+       empty sets) *)
+    exists (fun Sl : relation _ => exists l, Inhabited _ (E ⊓ atloc l)
+                                /\ Sl = [atloc l]⋅S⋅[atloc l]).
     split; swap 1 2.
     + apply rel_ext, antisym; intros x y xy.
-      * exists ([atloc (location_of x)]⋅S⋅[atloc (location_of x)]). intuition eauto.
-        rewrite tst_dot_tst. intuition. reflexivity.
-        apply Sloc in xy. symmetry. apply location_of_spec, xy.
-      * destruct xy as (? & (l, ->) & xy).
+      * exists ([atloc (location_of x)]⋅S⋅[atloc (location_of x)]).
+        split.
+        -- exists (location_of x); split; auto. exists x. split. 2: easy.
+           eapply Slocx in xy. rewrite tst_dot_tst in xy. apply xy. reflexivity.
+        -- pose proof (Slocx x y _ xy eq_refl).
+           destruct_rel. rewrite tst_dot_tst; tauto.
+      * destruct xy as (? & (l & i & ->) & xy).
         rewrite tst_dot_tst in xy.
         easy.
-    + pose (f :=
+    + (* Choice function: for each set of linearisations on a given
+         location, we unsurprisingly choose the one restriction of [S]
+         to this location. We must also not choose anything when the
+         set is empty. *)
+      pose (f :=
               fun Rs fRs =>
-                exists l, Rs = linearisations (E ⊓ atloc l) R /\
-                     fRs = [atloc l] ⋅ S ⋅ [atloc l]).
+                exists l, Inhabited _ (E ⊓ atloc l) /\
+                  Rs = linearisations (E ⊓ atloc l) R /\
+                  fRs = [atloc l] ⋅ S ⋅ [atloc l]).
       exists f. split. 2:split. 2:split.
       * (* f is a _sound_ choice function *)
-        intros Rs fRs. subst f. intros (l & -> & ->). split!; apply ?(ES l).
+        intros Rs fRs. subst f. intros (l & i & -> & ->). split!; apply ?(ES l).
         now apply is_irreflexive_spec2, (ES l).
         rewrite <-RS.
         intros x y xy.
@@ -377,13 +451,13 @@ Proof.
       * (* the domain of f is correct *)
         intros Rs. rewrite co_locs_partition_spec.
         split.
-        -- intros (l & ->). eexists. exists l. eauto.
-        -- intros (R1 & l & -> & ->). eauto.
+        -- intros (l & i & ->). eexists. exists l. eauto.
+        -- intros (R1 & l & i & -> & _). eauto.
       * (* f is a function(al relation) *)
         intros Rs.
         enough (H : forall b b' : relation (events c), f Rs b -> f Rs b' -> b ≦ b').
         { intros b b' e e'. apply rel_ext, antisym; eauto. }
-        intros S1 S2 (l1 & e1 & ->) (l2 & e2 & ->).
+        intros S1 S2 (l1 & i1 & e1 & ->) (l2 & i2 & e2 & ->).
         pose proof ES l1 as Sl1.
         pose proof ES l2 as Sl2.
         assert (HS : linearisations (E ⊓ atloc l1) R ([atloc l1]⋅S⋅[atloc l1])).
@@ -400,11 +474,11 @@ Proof.
         intuition.
       * (* [fun Sl => ...] is indeed the image through this function *)
         split.
-        -- intros R1 (l & ->).
+        -- intros R1 (l & i & ->).
            eexists. split. apply co_locs_partition_spec. exists l; auto.
            exists l. auto.
-        -- intros R1 (Rs_ & (l & ->)%co_locs_partition_spec & (l' & D & ->)).
-           exists l'. auto.
+        -- intros R1 (Rs_ & (l & i & ->)%co_locs_partition_spec & (l' & i' & D & ->)).
+           exists l'. split; auto.
 Qed.
 
 Lemma generate_orders_total {c} E (R S : relation (events c)) :

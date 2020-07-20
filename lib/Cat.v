@@ -54,11 +54,13 @@ Definition diagonal {A} : set A -> relation A := fun X => [X].
 
 Definition finite (X : Type) := exists l : list X, forall x : X, List.In x l.
 
+(* TODO: replace Set with Type below when CoLoR has merged the PR *)
+
 Record candidate :=
   {
     (* Documentation for names:
        http://diy.inria.fr/doc/herd.html#language:identifier *)
-    events : Type;
+    events : Set;
     W   : set events; (* read events *)
     R   : set events; (* write events *)
     IW  : set events; (* initial writes *)

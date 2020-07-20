@@ -431,7 +431,7 @@ Proof.
       assert (co_ww : co ≦ [W]⋅co⋅[W]). {
         unfold co. now kat.
       }
-      assert (co_irr : co ⊓ 1 ≦ zer events events). {
+      assert (co_irr : co ⊓ 1 ≦ 0). {
         unfold co, S_.
         destruct_rel.
         cut (acyclic (S ⊔ [IW]⋅loc⋅[(R ⊔ W) ⊓ !IW])). now intros a; apply a.
@@ -540,17 +540,13 @@ Proof.
            { (* Checking it's the right domain *)
              t.
              - rewrite S_rf in rw1.
-               destruct_rel.
-               apply dom_rng_char in Sdom.
-               assert (([!IW]⋅S⋅[!IW]) w1 r) by now apply Sdom.
-               + type.
-               + type.
+               destruct_rel; try t.
              - subst co S_.
                destruct_rel.
                eapply ranging_itr; eauto.
                apply ranging_cup.
                + intros x y xy. apply Sdom in xy. type.
-               + intros x y xy. destruct_rel. type.
+               + intros x y xy. destruct_rel. type. t.
            }
            ++ (** first case: S r w2. Then, S_ r w2 *)
               assert (a : forall S : relation events, S ≦ S^+) by (intro;ka). apply a.
