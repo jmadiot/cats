@@ -28,7 +28,7 @@ Definition unknown_set := unknown_set c.
 Definition unknown_relation := unknown_relation c.
 Definition M := R ⊔ W.
 Definition emptyset : set events := empty.
-Definition classes_loc : set events -> Ensemble (Ensemble events) := fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc x y.
+Definition classes_loc : set events -> Ensemble (Ensemble events) := partition loc.
 Definition co := unknown_relation "co".
 Definition dmb_st := unknown_relation "dmb.st".
 Definition dsb_st := unknown_relation "dsb.st".
