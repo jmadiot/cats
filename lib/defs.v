@@ -73,3 +73,6 @@ Definition subset_image {A B} (f : A -> B) (X : Ensemble A) : Ensemble B
 
 Definition union_of_relations {A} : Ensemble (relation A) -> relation A :=
   fun Rs x y => exists R, Rs R /\ R x y.
+
+Definition equivalence_classes {A} (R : relation A) : Ensemble (Ensemble A) :=
+  fun C => exists x, C x /\ forall y, R x y <-> C y.

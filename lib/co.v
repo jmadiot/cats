@@ -1,6 +1,6 @@
 From Coq Require Import String Ensembles List Lia.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import defs Cat proprel tactics oneofeach (* acyclic *) relalglaws.
+From Catincoq.lib Require Import defs Cat proprel tactics oneofeach relalglaws.
 
 (** This file uses fun and prop extensionalities in many places, it's
 not sure yet whether we will get rid of them or just add them as
@@ -75,9 +75,6 @@ Lemma loc_sym__ {c} : (loc c)° ≡ loc c.
 Proof.
   split; apply loc_sym.
 Qed.
-
-Definition equivalence_classes {A} (R : relation A) : Ensemble (Ensemble A) :=
-  fun C => exists x, C x /\ forall y, R x y <-> C y.
 
 (** below, trying to define [location] as [loc] equivalence classes,
     but that seems convoluted, it's probably better to define
@@ -174,14 +171,6 @@ Proof.
   repeat (easy || split). rewrite <-RS. kat.
 Qed.
 *)
-
-(** [partition equiv X] splits [X] into the set of sets [Xi] that are
-each included in an equivalence class of the relation [equiv]. It also
-filters out empty sets, which we implement below with Inhabited *)
-
-Definition partition {A} (equiv : relation A) (E F : Ensemble A) : Prop :=
-  Inhabited _ F /\
-  exists C, equivalence_classes equiv C /\ F = Intersection _ E C.
 
 (** This is the code for classes_loc that is indroduced by the cat2coq
 translation. The following lemma is the glue between the two notions
@@ -285,7 +274,7 @@ Proof.
   exists x; easy.
 Qed.
 
-(* TODO when done, maybe remve: *)
+(* TODO when done, maybe remove: *)
 Lemma co_locs_colocated {c} R (E : set _) x y (Ey : E y) (xy : loc c x y) :
   co_locs R (partition (loc c) E) (linearisations (E ⊓ atloc (location_of x)) R).
 Proof.
@@ -606,7 +595,7 @@ Abort.
 Lemma generate_orders_bounds {A} (E : set A) (loc R S : relation A) :
   generate_orders A loc E R S -> S ≦ [E] ⋅ S ⋅ [E].
 Proof.
-  (* rewrite generate_orders_spec. unfold spec1. *)
+  (* rewrite generate_orders_spec_3. unfold spec1. *)
   (* tauto. *)
 Abort.
 

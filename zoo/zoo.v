@@ -212,11 +212,7 @@ Proof.
   - (** Suppose we have a "sc.cat" execution, with a generated co *)
     intros (co & Hco & atomic & sc).
     rewrite no_mixed_size, dotx1 in sc. clear no_mixed_size no_atomic.
-    change @Cat.cross with @cross in Hco.
-    replace @Cat.co_locs with @co_locs in Hco by admit.
-    replace (fun Si : Ensemble events =>
-              (forall x : events, Si x -> Ensemble_of_dpset W x) /\ (forall x y : events, Si x -> Si y -> loc x y))
-      with (partition loc W) in Hco by admit.
+    change @Cat.co_locs with @co_locs in Hco.
     pose proof Hco as co_total%GOT.
     pose proof Hco as co_total'%GOT'.
     pose proof Hco as co_order%GOO.
@@ -225,7 +221,7 @@ Proof.
     (* assert (co_loc : co ≦ loc). *)
     (* { transitivity ([W]⋅loc⋅[W]). rewrite co_total; ka. kat. } *)
     assert (co_final : [W ⊓ !FW]⋅loc⋅[FW] ≦ co).
-    { rewrite <-co_iwfw. rewrite capcup, 2 cap_cartes. Fail kat. admit. }
+    { rewrite <-co_iwfw. intros x y. destruct_rel. t. right. t. }
     (* assert (co_total' : [W] ⋅ (!1 ⊓ loc) ⋅ [W] ≦ co ⊔ co°). *)
     (* { rewrite capC, dotcap1_rel, co_total; try kat. *)
     (*   destruct_rel. now left. now right. clear GOS. firstorder. } *)
@@ -499,12 +495,8 @@ Proof.
         intros d; apply co2.
         t.
       }
-      replace @Cat.cross with @cross by admit.
-      replace @Cat.co_locs with @co_locs by admit.
-      replace (fun Si : Ensemble events =>
-                 (forall x : events, Si x -> Ensemble_of_dpset W x)
-                 /\(forall x y : events, Si x -> Si y -> loc x y))
-        with (partition loc W) by admit.
+      change @Cat.cross with @cross.
+      change @Cat.co_locs with @co_locs.
       apply GOS.
       clear GOS GOT GOT' GOO.
       split. 2:split. 2:easy. 2:intros l; split; [ split | split ].
@@ -590,7 +582,7 @@ Proof.
            rewrite itr_str_l.
            clear no_atomic.
            hkat.
-Admitted (* need to replace the definitions in Cat.v before *).
+Qed.
 
 Lemma sc_nosm_stronger_than_x86tso c : is_transitive (po c) -> sc_nosm.valid c -> x86tso.valid c.
 Proof.

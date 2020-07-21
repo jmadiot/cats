@@ -35,6 +35,14 @@ Class StrictTotalOrder_on {A} (E : set A) (R : relation A) :=
 
 Definition linearisations {A} := @linear_extension_on A.
 
+(** [partition equiv X] splits [X] into the set of sets [Xi] that are
+each included in an equivalence class of the relation [equiv]. It also
+filters out empty sets, which we implement below with Inhabited *)
+
+Definition partition {A} (equiv : relation A) (E F : Ensemble A) : Prop :=
+  Inhabited _ F /\
+  exists C, equivalence_classes equiv C /\ F = Intersection _ E C.
+
 Definition co_locs {A} (pco : relation A) (wss : Ensemble (set A)) : Ensemble (set (relation A)) :=
   subset_image (fun ws => linear_extension_on ws pco) wss.
 
