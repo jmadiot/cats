@@ -1,6 +1,5 @@
 -Q . Catincoq
 
-lib/aac_ra.v
 lib/acyclic.v
 lib/Cat.v
 lib/co.v

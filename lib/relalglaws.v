@@ -109,8 +109,11 @@ Proof.
   split; auto. exists y; hnf; auto. exists x; split; auto.
 Qed.
 
-(* unify X/A *)
+(* TODO unify X/A *)
 
 Lemma dom_rng_char {X} (R : relation X) (a b : set X) : R ≦ [a] ⋅ R ⋅ [b] <-> R ≦ [a] ⋅ top ⋅ [b].
 Proof.
-Admitted.
+  split; intros e x y xy; specialize (e x y xy);
+    rewrite tst_dot_tst in *; firstorder.
+  constructor.
+Qed.

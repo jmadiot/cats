@@ -360,9 +360,9 @@ Qed.
 
 Lemma r_iw_ : R_ ⊓ IW_ ≦ bot.
 Proof.
-  intros w1 w2.
-  destruct_rel.
-Admitted.
+  compute.
+  firstorder congruence.
+Qed.
 
 Definition candidate_of_program : candidate :=
   {| events := { event | is_Some (label_of event) };

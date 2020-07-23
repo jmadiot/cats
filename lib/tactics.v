@@ -77,3 +77,60 @@ Tactic Notation "elim_cnv" :=
 Tactic Notation "elim_cnv" "in" hyp(H) :=
   repeat (rewrite ?cnvtst, ?cnv1, ?cnv0, ?cnvstr, ?cnvitr,
           ?cnvtop, ?cnvcap, ?cnvdot, ?cnvpls, ?cnvneg in H).
+
+
+(** Help solve goals and generate constraints based on the "type" of
+    some events i.e. the set to which it belongs, such as R, W, !W,
+    etc. *)
+
+Ltac type_ :=
+  repeat
+    match goal with
+    | Hx : ?X |- ?X => assumption
+    | Hx : (_ ⊓ _) _ |- _ => destruct Hx
+    | Hx : ?X ?x, Hy : ?Y ?x, XY : ?X ⊓ ?Y ≦ bot |- _ =>
+      eapply XY; split; eauto
+    | H : (?r ⋅ [?Y]) ?x ?v |- ?Y ?v => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?x ?v |- ?Y ?v => destruct_rel; assumption
+    | H : ([?X] ⋅ ?r ⋅ [?Y]) ?v ?y |- ?X ?v => destruct_rel; assumption
+    | H : ?r ?x ?v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?Y ?v =>
+      assert (([X] ⋅ r ⋅ [Y]) x v) by apply H2, H;
+      destruct_rel; assumption
+    | H : ?r ?v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- ?X ?v =>
+      assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
+      destruct_rel; assumption
+    | |- (_ ⊓ _) _ => split
+    | |- (!_) _ => try solve [intro; type_]
+    | H : ?X ≦ ?Y, H' : ?X ?x |- ?Y ?x => apply H, H'
+    | H : ?X ≦ ?Y |- ?Y ?x => try solve [apply H; type_]
+    | |- top _ => constructor
+    end.
+
+Tactic Notation "type" := type_.
+
+Tactic Notation "type" var(v) :=
+  match goal with
+  | H : ?r ?x v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
+    assert (Y v) by type
+  | H : ?r v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
+    assert (X v) by type
+  end.
+
+
+(** Somewhat dual to destruct_rel: helps solve goals of the form
+    [(some relation) x y] *)
+
+Ltac relate :=
+  repeat
+    (match goal with
+     | |- (_ ⋅ [_]) ?x ?y => exists y; [ | split; auto ]
+     | |- ([_] ⋅ [_] ⋅ _) ?x ?y => exists x
+     | |- ([_] ⋅ [_] ⋅ [_] ⋅ _) ?x ?y => exists x
+     | |- ([_] ⋅ _) ?x ?y => exists x; [ split; auto | ]
+     | |- (_ ⊓ _) ?x ?y => split; auto
+     | |- [_] ?x ?y => split; [ reflexivity | ]
+     | |- 1 ?x ?y => reflexivity
+     | |- top ?x ?y => constructor
+     | |- ?R° ?x ?y => change (R y x)
+     | |- _ => idtac
+     end; type; try assumption).

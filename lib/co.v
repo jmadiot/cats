@@ -172,30 +172,6 @@ Proof.
 Qed.
 *)
 
-(** This is the code for classes_loc that is indroduced by the cat2coq
-translation. The following lemma is the glue between the two notions
-but in fact there are several gaps, [classes_loc E F] implies
-[classes_loc E F'] for every F' included in F -- this will be useless
-in time since we will replace [classes_loc] with [partition] in
-cat2coq *)
-Definition classes_loc {c} : set (events c) -> Ensemble (Ensemble (events c)) :=
-  fun S Si => (forall x, Si x -> Ensemble_of_dpset S x) /\ forall x y, Si x -> Si y -> loc c x y.
-Lemma classes_loc_partition {c} : @classes_loc c = partition (loc c).
-Proof.
-  apply functional_extensionality; intros E.
-  apply functional_extensionality; intros F.
-  apply propositional_extensionality; split.
-  - admit.
-  - intros (i & G & (x & Gx & xG) & ->).
-    destruct i as (_ & [y Ey Gy]).
-    split.
-    + intros _ [z e g]. apply e.
-    + intros _ _ [z ez gz] [t et gt].
-      apply xG in gz.
-      apply xG in gt.
-      eapply (loc_trans c). apply loc_sym; eauto. eauto.
-Abort.
-
 Lemma partition_spec {c} (E : Ensemble (events c)) (E' : Ensemble (events c)) :
   partition (loc c) E E' <-> Inhabited _ E' /\ exists l, E' ≡ atloc l ⊓ E.
 Proof.
@@ -535,88 +511,15 @@ Proof.
     rewrite tst_dot_tst in ST. tauto.
 Qed.
 
-Lemma generate_orders_spec_2 {ev} (W : set ev) (loc pco co : relation ev) :
-  is_strict_order pco (* is that right? *) ->
-  generate_orders ev loc W pco co <->
-  extends_along pco ([W] ⋅ loc ⋅ [W]) co.
+Lemma generate_orders_dom {c} E (R S : relation (events c)) :
+  generate_orders (events c) (loc c) E R S -> S ≦ [E] ⋅ S ⋅ [E].
 Proof.
-  unfold generate_orders, cross.
-  split.
-  - intros (colocs & Hcolocs & Eco).
-    subst co.
-    hnf.
-    unfold extends_along in *.
-    split 3.
-    + enough (pco ⊓ loc ≦ union_of_relations colocs) by admit.
-      (* Extends along means something like that ? *)
-      intros x y [xy lxy].
-      destruct Hcolocs as (f & faimswell & fisfun & Ecolocs).
-      rewrite Extensionality_Ensembles'' in Ecolocs. subst colocs.
-      hnf.
-      unfold relational_image in *.
-      (*
-        R doit relier x à y
-        R = f(Rs) avec Rs qui est dans [co_locs (partition loc W)]
-        pour une certaine fonction de choix f : '' -> relation ev
-        peut-être qu'il faudrait simplement un ensemble de locations
-        et du coup les fonctions c'est x' y' => if loc(x') = loc(x) then
-        ou alors c'est "il existe une complétion de l'ordre"
-        mais c'est ce qu'on est en train de prouver.
-        rha
-
-        ah hmm mais le R il est complètement déterminé ? non il est déterminé par le Rs?
-        R = f(Rs)
-       *)
-Abort.
-
-Definition spec1 {A} (E : set A) (loc R S : relation A) :=
-  S ≦ [E] ⋅ S ⋅ [E] /\
-  S ⊓ 1 ≦ 0 /\
-  S ⋅ S ≦ S /\
-  S ≦ loc /\
-  forall x y : A,
-    loc x y ->
-    E x ->
-    E y ->
-    (R x y -> S x y) /\ (x <> y -> S x y \/ S y x).
-
-Lemma generate_orders_spec {A} (E : set A) (loc R S : relation A) :
-  generate_orders A loc E R S <->
-  spec1 E loc R S.
-
-Proof.
-  unfold generate_orders, cross.
-  split.
-  - intros l. (* (l & L & lS & RL & lL). *)
-    split 5.
-    + intros x y.
-Abort.
-
-Lemma generate_orders_bounds {A} (E : set A) (loc R S : relation A) :
-  generate_orders A loc E R S -> S ≦ [E] ⋅ S ⋅ [E].
-Proof.
-  (* rewrite generate_orders_spec_3. unfold spec1. *)
-  (* tauto. *)
-Abort.
-
-Lemma spec1_spec2 {A} (E : set A) (loc R S : relation A) :
-  spec1 E loc R S <-> extends_along R ([E]⋅loc⋅[E]) S.
-Proof.
-  split.
-  - intros (Sdom & Sirr & St & Sloc & Stot). split 3.
-    + destruct_rel. spec Stot x y. destruct Stot as [RS Stot]; auto.
-Abort.
-
-Lemma generate_cos_spec {A} (W IW FW : set A) (loc : relation A) :
-  let co0 := loc ⊓ ([IW] ⋅ top ⋅ [(W ⊓ !IW)] ⊔ [(W ⊓ !FW)] ⋅ top ⋅ [FW]) in
-  let generate_orders s pco := cross (co_locs pco (partition loc s)) in
-  let generate_cos pco := generate_orders W pco in
-  forall co,
-    generate_cos co0 co ->
-    is_strict_order co /\
-    [W] ⋅ loc ⋅ [W] ≡ co ⊔ co° ⊔ 1 /\
-    [IW] ⋅ loc ⋅ [W ⊓ !IW] ≦ co /\
-    [W ⊓ !FW] ⋅ loc ⋅ [FW] ≦ co /\
-    True
-.
-Abort.
+  rewrite generate_orders_spec_3.
+  intros [_ [sl os]].
+  intros  x y xy.
+  apply loc_location_of in xy; auto.
+  specialize (os (location_of x)).
+  destruct os as (os & l & tot).
+  specialize (l _ _ xy).
+  destruct_rel. rewrite tst_dot_tst. tauto.
+Qed.
