@@ -1,4 +1,4 @@
-From Coq Require Import Arith List Streams.
+From Coq Require Import Arith List Streams Lia.
 From RelationAlgebra Require Import lattice kat.
 From Catincoq.lib Require Import Cat proprel tactics.
 
@@ -51,7 +51,7 @@ Lemma le_list_max l n :
   n <= list_max l <-> (n = O \/ exists k, n <= k /\ In k l).
 Proof.
   induction l; split; simpl.
-  - firstorder.
+  - firstorder; lia.
   - firstorder. subst; constructor.
   - rewrite Nat.max_le_iff. firstorder.
   - rewrite Nat.max_le_iff. intros [-> | (? & ? & [ -> | ? ])]; firstorder.

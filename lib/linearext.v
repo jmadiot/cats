@@ -17,8 +17,9 @@ Proof.
     split.
     + apply t; eexists; eauto.
     + intros <-. firstorder.
-  - firstorder.
+  - firstorder || compute; intuition.
     (* TODO understand why firstorder fails if we don't Require CoLoR.Util.Relation.Total *)
+    (* Coq 8.12.2 update : firstorder no longer works even if we don't. *)
 Qed.
 
 (* Instead of finiteness, it is also possible to use the axiom of
@@ -50,7 +51,7 @@ Proof.
   - intros x z [y xy yz]. eapply Tr; eauto.
   - intros x y [xy <-]; eapply Ir, xy.
   - intros x y. destruct_rel. destruct (Tot x y) as [xy | [<- | xy]].
-    firstorder. firstorder. left; auto. firstorder. right; auto.
+    firstorder. firstorder. left; auto. compute in *; intuition. right; auto.
   - intros x y. destruct_rel. apply I. firstorder.
 Qed.
 

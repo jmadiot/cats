@@ -127,8 +127,8 @@ Lemma Forall2_map {A B C} (R : A -> B -> Prop) (S : A -> C -> Prop) (f : B -> C)
 Proof.
   revert l2; induction l1 as [| a l IHl1]; intros l2 RS H.
   - inversion H; destruct l2; subst. constructor. discriminate.
-  - inversion H as [ | a_ b l_ l2' ]. subst.
-    constructor; firstorder.
+  - inversion H as [ | a_ b l_ l2' ]. subst. simpl.
+    constructor; firstorder; apply IHl1; firstorder.
 Qed.
 
 Lemma Forall2_map_inv {A B C} (R : A -> B -> Prop) (S : A -> C -> Prop) (f : C -> B) l1 l2 :

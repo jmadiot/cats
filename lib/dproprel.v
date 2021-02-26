@@ -179,8 +179,8 @@ Proof.
   - constructor.
     1: now apply lower_laws.
     all: try solve [compute; firstorder].
-    + intros n m x a b. split. intros [c <- H]; auto. intros H. exists a; firstorder.
-    + right. intros n m x a b. split. intros [c H <-]; auto. intros H. exists b; firstorder.
+    + intros n m x a b. split. intros [c <- H]; auto. intros H. exists a; firstorder; reflexivity.
+    + right. intros n m x a b. split. intros [c H <-]; auto. intros H. exists b; firstorder; reflexivity.
     + intros _ n x a a_ <-. exists O. reflexivity.
     + intros _ n x a c [b ab [i bc]]. exists (S i), b; auto.
     + intros H n m x z e a c [b [i ab] bc]. revert a ab. induction i; intros a ab.

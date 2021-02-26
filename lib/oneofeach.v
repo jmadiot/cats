@@ -56,7 +56,7 @@ Lemma one_of_each_spec_list {X} (L : list (list X)) :
 Proof.
   intros Hnodup.
   destruct (in_dec_refined nil L) as [Hnil | Hnil].
-  now intros []; firstorder.
+  now intros []; firstorder discriminate.
   {
     (* case where one of the lists is empty *)
     split.
