@@ -8,6 +8,7 @@ lib/dproprel.v
 lib/interp.v
 lib/linearext.v
 lib/list.v
+lib/antitransitive.v
 lib/oneofeach.v
 lib/proprel_classic.v
 lib/proprel.v
