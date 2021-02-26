@@ -559,7 +559,6 @@ Proof.
     rewrite !cap_cartes.
     assert (E0 : [empty ⊔ empty : set _] ≡ (0 : relation events)) by kat.
     assert (E1 : [top : set _] ≡ (1 : relation events)) by kat.
-Abort. (*
     rewrite E0, E1.
     rewrite !leq_tst_1.
     ra_normalise.
@@ -568,7 +567,6 @@ Abort. (*
     assert (rf ⊓ ext ≦ rf) as -> by lattice.
     ka.
 Qed.
-*)
 
 Lemma sc_nosm_stronger_than_tso_nosm c : is_transitive (po c) -> sc_nosm.valid c -> tso_nosm.valid c.
 Proof.

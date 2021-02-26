@@ -134,3 +134,30 @@ Ltac relate :=
      | |- ?R° ?x ?y => change (R y x)
      | |- _ => idtac
      end; type; try assumption).
+
+(* [rel t], on a goal of the form [r x y], applies tactic [t] on
+   relation [r], in a way that allows rewriting. [t] is typically of
+   the form [rewrite e] (if e is of the form [_ ≡ _]) or of the form
+   [rewrite <-e] (if e is of the form [_ ≦ _]) *)
+
+Tactic Notation "rel" tactic(t) :=
+  match goal with
+    x : ?A, y : ?A |- (?r : relation ?A) ?x ?y =>
+    let s := fresh "s" in
+    let H := fresh "H" in
+    evar (s : relation A);
+    assert (H : s ≦ r);
+    [ t; unfold s; reflexivity
+    | apply H; unfold s; clear s H ]
+  end.
+
+Example rel_example {A} (r : relation A) a b c : r a b -> r b c -> r^+ a c.
+Proof.
+  intros ab bc.
+  rel rewrite <-itr_trans.
+  rel rewrite <-itr_ext.
+  eexists; eauto.
+Qed.
+
+(* TODO a tactic [in H rel t]? It couldn't make [let T := type of H]
+   work, maybe Coq 8.11.2 is too old? *)
