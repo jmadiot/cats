@@ -92,7 +92,7 @@ Lemma ranging_spec {A} (R : relation A) (X : set A) :
   R ≦ R ⋅ [X] <-> (forall x y, R x y -> X y).
 Proof.
   split; intros r x y xy.
-  - apply r in xy. type.
+  - apply r in xy. types.
   - relate. eauto.
 Qed.
 
@@ -133,7 +133,7 @@ Lemma domrng_char {A} (R : relation A) (X Y : set A) :
   R ≦ [X] ⋅  R  ⋅ [Y] <->
   R ≦ [X] ⋅ top ⋅ [Y].
 Proof.
-  split. intros ->. ra. intros r x y xy. spec r x y xy. relate; type.
+  split. intros ->. ra. intros r x y xy. spec r x y xy. relate; types.
 Qed.
 
 Lemma itr_ext' {X} (R : relation X) x y : R x y -> R^+ x y.
@@ -253,7 +253,7 @@ Proof.
         ra_normalise.
         subst WRS S'' S' M' M.
         intros w r. destruct_rel.
-        -- relate. right. relate. left. type.
+        -- relate. right. relate. left. types.
         -- relate. exfalso. assert (w = r) as <- by now apply iw_uniq; relate.
            apply (sc w w). relate.
            assert (rf ≦ (po ⊔ (fr ⊔ (rf ⊔ co)))^+) as a by ka.
@@ -273,9 +273,9 @@ Proof.
         { intros <-. unfold S'', S' in w1w2. destruct_rel.
           eapply Sirr; split; eauto; reflexivity.
           firstorder. }
-        type r.
-        type w1.
-        assert (w2 :: W) by (unfold WRS in *; type).
+        types r.
+        types w1.
+        assert (w2 :: W) by (unfold WRS in *; types).
         assert (loc w1 w2). { apply loc_trans with r. now apply rf_loc.
           apply loc_sym. subst WRS. destruct_rel. apply loc_sym. auto. }
         apply weq_spec, proj1 in co_total'.
@@ -284,9 +284,9 @@ Proof.
            { rewrite Heqfr. split. exists w1. apply w1r. apply D. intros ->.
              (* WRS is acyclic *) subst WRS S'' S'. destruct_rel.
              now apply (Sirr w2 w2); relate.
-             now type.
+             now types.
              now apply (Sirr w2 w2); relate.
-             now type.
+             now types.
            }
            subst WRS S'' S'. clear w1w2.
            destruct_rel.
@@ -308,13 +308,13 @@ Proof.
       rewrite cap_cartes, cap_cartes_l.
       subst S'.
       intros w1 r [w1r short].
-      assert (r :: R). type.
+      assert (r :: R). types.
       destruct (r_rf r r ltac:(split; auto)) as [w2 _ qw].
-      type w2.
+      types w2.
       destruct (classic (w1 = w2)). congruence.
       apply weq_spec, proj1 in co_total'.
       destruct (co_total' w1 w2) as [D|D].
-      { relate. type. apply loc_trans with r. now destruct_rel.
+      { relate. types. apply loc_trans with r. now destruct_rel.
         apply loc_sym. now apply rf_loc. }
       * (* w1 -co-> w2 -rf-> r, which should contradict the "short" hypothesis *)
         destruct short. exists w2.
@@ -332,7 +332,7 @@ Proof.
         -- (* w2 to r *)
            exists r. 2: now split; auto. exists w2. now split; auto.
            split. 2: now apply rf_loc.
-           assert (r :: !IW). now type.
+           assert (r :: !IW). now types.
            destruct (classic (IW w2)).
            ++ (* w2 is initial *)
               right. exists r. exists w2. now split; auto. now apply rf_loc.
@@ -345,9 +345,9 @@ Proof.
         exfalso.
         change (co w2 w1) in D.
         assert (fr r w1). { subst. split. now exists w2; auto.
-          unfold id. simpl. type r. type w1. intros ->. Fail now type.
+          unfold id. simpl. types r. types w1. intros ->. Fail now type.
           (* cycle in w1r *) destruct_rel. now apply (Sirr w1 w1); relate.
-          type. }
+          types. }
         clear short. destruct_rel.
         -- (* in S *) apply Sirr with r r. split. apply St. exists w1.
            now apply frS. assumption. reflexivity.
@@ -437,9 +437,9 @@ Proof.
             + left. relate. apply itr_ext'. left. relate.
             + right. relate. apply itr_ext'. left. relate.
           - rewrite <-leq_cup_r, <-leq_cup_r, <-itr_ext.
-            destruct_rel. relate. right; type.
+            destruct_rel. relate. right; types.
           - rewrite <-leq_cup_l, <-leq_cup_r, <-itr_ext.
-            destruct_rel. relate. right; type.
+            destruct_rel. relate. right; types.
           - rewrite <-cap_cartes, <-capA, cap_cartes, iw_uniq, capC, capneg.
             ra.
         }
@@ -489,8 +489,8 @@ Proof.
                destruct_rel.
                eapply ranging_itr; eauto.
                apply ranging_cup.
-               + intros x y xy. apply Sdom in xy. type.
-               + intros x y xy. destruct_rel. type. relate.
+               + intros x y xy. apply Sdom in xy. types.
+               + intros x y xy. destruct_rel. types. relate.
            }
            ++ (** first case: S r w2. Then, S_ r w2 *)
               assert (a : forall S : relation events, S ≦ S^+) by (intro;ka). apply a.
@@ -505,7 +505,7 @@ Proof.
                  destruct (classic (IW w1)) as [w1i | w1ni].
                  (* w1 initial *)
                  { subst co. right. apply domrng_char in Sdom.
-                   relate. now destruct_rel. right; type. }
+                   relate. now destruct_rel. right; types. }
                  (* w1 not initial *)
                  assert (a: ([!IW] ⋅ co) w1 w2) by relate.
                  left. cut ([!IW]⋅co ≦ S). intros H; now apply H.

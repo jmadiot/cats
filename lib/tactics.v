@@ -83,7 +83,7 @@ Tactic Notation "elim_cnv" "in" hyp(H) :=
     some events i.e. the set to which it belongs, such as R, W, !W,
     etc. *)
 
-Ltac type_ :=
+Ltac types_ :=
   repeat
     match goal with
     | Hx : ?X |- ?X => assumption
@@ -100,20 +100,20 @@ Ltac type_ :=
       assert (([X] ⋅ r ⋅ [Y]) v y) by apply H2, H;
       destruct_rel; assumption
     | |- (_ ⊓ _) _ => split
-    | |- (!_) _ => try solve [intro; type_]
+    | |- (!_) _ => try solve [intro; types_]
     | H : ?X ≦ ?Y, H' : ?X ?x |- ?Y ?x => apply H, H'
-    | H : ?X ≦ ?Y |- ?Y ?x => try solve [apply H; type_]
+    | H : ?X ≦ ?Y |- ?Y ?x => try solve [apply H; types_]
     | |- top _ => constructor
     end.
 
-Tactic Notation "type" := type_.
+Tactic Notation "types" := types_.
 
-Tactic Notation "type" var(v) :=
+Tactic Notation "types" var(v) :=
   match goal with
   | H : ?r ?x v, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
-    assert (Y v) by type
+    assert (Y v) by types
   | H : ?r v ?y, H2 : ?r ≦ [?X] ⋅ ?r ⋅ [?Y] |- _ =>
-    assert (X v) by type
+    assert (X v) by types
   end.
 
 
@@ -133,16 +133,16 @@ Ltac relate :=
      | |- top ?x ?y => constructor
      | |- ?R° ?x ?y => change (R y x)
      | |- _ => idtac
-     end; type; try assumption).
+     end; types; try assumption).
 
-(* [rel t], on a goal of the form [r x y], applies tactic [t] on
-   relation [r], in a way that allows rewriting. [t] is typically of
-   the form [rewrite e] (if e is of the form [_ ≡ _]) or of the form
-   [rewrite <-e] (if e is of the form [_ ≦ _]) *)
+(** [rel t], on a goal of the form [r x y], applies tactic [t] on
+    relation [r], in a way that allows rewriting. [t] is typically of
+    the form [rewrite e] (if e is of the form [_ ≡ _]) or of the form
+    [rewrite <-e] (if e is of the form [_ ≦ _]) *)
 
 Tactic Notation "rel" tactic(t) :=
   match goal with
-    x : ?A, y : ?A |- (?r : relation ?A) ?x ?y =>
+    x : ?A, y : ?A |- ?r ?x ?y =>
     let s := fresh "s" in
     let H := fresh "H" in
     evar (s : relation A);
@@ -159,5 +159,32 @@ Proof.
   eexists; eauto.
 Qed.
 
-(* TODO a tactic [in H rel t]? It couldn't make [let T := type of H]
-   work, maybe Coq 8.11.2 is too old? *)
+(** [in H rel t] is similar to [rel t] but applies [t] on the relation
+    [r] where [H] is an hypothesis of the form [r x y] *)
+
+Tactic Notation "in" hyp(H) "rel" tactic(t) :=
+  match type of H with
+  | ?r ?x ?y =>
+    let A := type of x in
+    let s := fresh "s" in
+    let L := fresh "L" in
+    evar (s : relation A);
+    assert (L : r ≦ s);
+    [ unfold s; t; reflexivity
+    | subst s; try (apply L in H; clear L) ];
+    idtac
+  end.
+
+(* alternative syntax [rel t in H]: better indentation, but requires
+   parentheses in [t] when [t] is e.g. [rewrite _] *)
+
+Tactic Notation "rel" tactic(t) "in" hyp(H) := in H rel t. 
+
+Example in_rel_example {A} (r : relation A) a b c : r a b -> r b c -> r^+ a c.
+Proof.
+  intros ab bc.
+  in ab rel rewrite (itr_ext r).
+  rel (rewrite (itr_ext r)) in bc. (* alternative syntax *)
+  rel rewrite <-itr_trans.
+  eexists; eauto.
+Qed.
