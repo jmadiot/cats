@@ -15,6 +15,7 @@ lib/proprel.v
 lib/relalglaws.v
 lib/tactics.v
 lib/uniproc.v
+lib/wf.v
 models/aarch64fences.v
 models/aarch64_obsolete.v
 models/aarch64.v

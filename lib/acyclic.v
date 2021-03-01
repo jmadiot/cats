@@ -126,6 +126,12 @@ Proof.
   apply irreflexive_weq. ra.
 Qed.
 
+Lemma acyclic_cnv {X} (R : relation X) : acyclic R <-> acyclic R°.
+Proof.
+  unfold acyclic. rewrite <-cnvitr.
+  compute; split; intros a x y; specialize (a y x); intuition.
+Qed.
+
 Lemma transitive_irreflexive_acyclic {X} (R : relation X) : is_transitive R -> irreflexive R -> acyclic R.
 Proof.
   intros t. apply irreflexive_weq. symmetry. apply itr_transitive. auto.
@@ -210,7 +216,7 @@ Proof.
   ra.
 Qed.
 
-Lemma  acyclic_cup_excl2_l {X} (R S : relation X) :
+Lemma acyclic_cup_excl2_l {X} (R S : relation X) :
   R ⋅ S ≦ 0 ->
   S ⋅ S ≦ 0 ->
   acyclic (R ⊔ S) <-> acyclic R.

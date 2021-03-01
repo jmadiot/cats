@@ -13,10 +13,7 @@ Proof.
   compute; intuition.
 Qed.
 
-Instance diff_leq {A} : Proper (leq ==> flip leq ==> leq) (@diff A).
-Proof.
-  compute; intuition.
-Qed.
+Instance diff_leq {A} : Proper (leq ==> flip leq ==> leq) (@diff A) := ltac:(firstorder).
 
 (** Equivalence between definitions of transitive closures *)
 
