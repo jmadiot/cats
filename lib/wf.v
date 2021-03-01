@@ -85,7 +85,7 @@ Proof.
     rewrite acyclic_cnv in a.
     unfold acyclic, is_irreflexive in *.
     compute in *; intuition.
-  - (* {y | x R+ y} is finite, of course *)
+  - (* {y | x R+ y} is finite, since X is finite *)
     destruct f as [l hl].
     exists l. intros y _.
     now apply base.elem_of_list_In.
