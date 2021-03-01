@@ -1,6 +1,6 @@
 From Coq Require Import Init.Wf Relations.
 From RelationAlgebra Require Import prop monoid kat relalg kat_tac.
-From Catincoq.lib Require Import proprel defs tactics.
+From Catincoq.lib Require Import proprel defs tactics wf.
 
 (** Relation difference *)
 
@@ -14,70 +14,6 @@ Proof.
 Qed.
 
 Instance diff_leq {A} : Proper (leq ==> flip leq ==> leq) (@diff A) := ltac:(firstorder).
-
-(** Equivalence between definitions of transitive closures *)
-
-Lemma itr_clos_trans {A} (r : relation A) : r^+ ≡ clos_trans _ r.
-Proof.
-  apply antisym.
-  - apply itr_ind_l1.
-    + compute; intuition.
-    + intros x z [y xy yz]. apply t_trans with y; compute; intuition.
-  - intros x z xz. induction xz.
-    + now rel rewrite <-itr_ext.
-    + rel rewrite <-itr_trans. exists y; eauto.
-Qed.
-
-Lemma clos_trans__n1 {A} (r : relation A) :
-  clos_trans _ r ≡ clos_trans_n1 _ r.
-Proof.
-  intros x y; apply clos_trans_tn1_iff.
-Qed.
-
-Lemma clos_trans__1n {A} (r : relation A) :
-  clos_trans _ r ≡ clos_trans_1n _ r.
-Proof.
-  intros x y; apply clos_trans_t1n_iff.
-Qed.
-
-Lemma clos_trans_1n_n1 {A} (r : relation A) :
-  clos_trans_1n _ r ≡ clos_trans_n1 _ r.
-Proof.
-  now rewrite <-clos_trans__1n, clos_trans__n1.
-Qed.
-
-(** The transitive closure of a well-founded relation is well-founded *)
-
-Instance wf_leq {A} : Proper (flip leq ==> impl) (@well_founded A).
-Proof.
-  intros r s i w x; revert x.
-  apply (well_founded_induction w _); intros x IH.
-  constructor. intros y yx. apply IH, i, yx.
-Qed.
-
-Instance wf_weq {A} : Proper (weq ==> iff) (@well_founded A).
-Proof.
-  intros r s e; split; apply wf_leq; auto; intros x y xy; apply e, xy.
-Qed.
-
-Lemma Acc_itr {A} (r : relation A) x : Acc r x -> Acc (clos_trans_n1 _ r) x.
-Proof.
-  intros a.
-  induction a as [x ax IH].
-  constructor; intros p px.
-  destruct px as [x px | x y xy px]; auto.
-  apply IH in xy.
-  apply xy in px.
-  exact px.
-Qed.
-
-Lemma wf_itr {A} (r : relation A) : well_founded r -> well_founded r^+.
-Proof.
-  intros wf.
-  rewrite itr_clos_trans, clos_trans__n1.
-  unfold well_founded.
-  pose proof @Acc_itr; eauto.
-Qed.
 
 (** If a relation [r] is well-founded in both directions, then the
     relation [inside], which can go either way, is, too. We could add
